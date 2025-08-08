@@ -5,7 +5,7 @@
   $schema: 'https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json',
   appId: 'FGCS',
   asar: true,
-  productName: 'FGCS',
+  productName: 'ControlSystem',
   directories: {
     output: 'release/${version}',
   },
@@ -22,7 +22,7 @@
         arch: ['x64'],
       },
     ],
-    artifactName: '${productName}-Windows-${version}-Setup.${ext}',
+    artifactName: '${productName}-Win-${version}-Setup.${ext}',
   },
   nsis: {
     oneClick: false,

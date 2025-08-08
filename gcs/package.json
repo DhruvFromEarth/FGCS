@@ -1,12 +1,12 @@
 {
   "name": "fgcs",
-  "productName": "FGCS",
+  "productName": "ControlSystem",
   "description": "Falcon Ground Control Station",
   "author": {
     "name": "Avis-Drone-Labs"
   },
   "private": true,
-  "version": "0.1.9-alpha",
+  "version": "1.0.1",
   "license": "GPL-3.0-only",
   "homepage": "https://fgcs.projectfalcon.uk",
   "bugs": {

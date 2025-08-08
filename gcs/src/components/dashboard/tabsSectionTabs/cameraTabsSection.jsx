@@ -68,11 +68,28 @@ export default function CameraTabsSection({ tabPadding }) {
           placeholder="Select camera input"
           data={devices.map((device) => {
             return { value: device.deviceId, label: device.label }
-          })}
+          }).concat({ value: "rtsp://192.168.144.25:8554/main.264", label: "rtsp://192.168.144.25:8554/main.264" })}
           value={deviceId}
           onChange={setDeviceId}
           className={`w-[100%] max-w-[350px] @xl:max-w-[640px]`}
         />
+        {/* <Select
+          placeholder="Select IP camera"
+          data={[
+            { value: "rtsp://192.168.144.25:8554/main.264", label: "Drone Camera 1" },
+          ]}
+          onChange={(value) => {
+            if (value) {
+              window.ipcRenderer.openCameraWindow({
+                type: "rtsp",
+                url: value,
+                deviceName: "IP Camera",
+              })
+            }
+          }}
+          className="w-full max-w-[350px] @xl:max-w-[640px]"
+        /> */}
+
         {deviceId !== null && (
           <div className="relative">
             <Webcam
