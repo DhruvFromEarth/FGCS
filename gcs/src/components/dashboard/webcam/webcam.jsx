@@ -16,24 +16,68 @@ export default function CameraWindow() {
   const rtspUrl = searchParams.get("url")
   const deviceName = searchParams.get("deviceName")
 
-  useEffect(() => {
-    if (type === "rtsp" && rtspUrl) {
-      socket.emit("start_rtsp", { url: rtspUrl })
+//   const canvasRef = useRef(null);
+//   const latestFrameRef = useRef(null);
+//   const secondLastFrameRef = useRef(null);
+//   const isRenderingRef = useRef(false);
 
-      const handleFrame = (data) => {
-        if (imgRef.current) {
-          imgRef.current.src = `data:image/jpeg;base64,${data.frame}`
-        }
-      }
+//   useEffect(() => {
+//     socket.on('connect', () => {
+//       console.log(`Connected: ${socket.id}`);
+//     });
+//     console.log("testing useEffect.");
+//     let counter = 0;
+//     const interval = setInterval(() => {
+//       console.log(`${counter} fps`);
+//       counter = 0;
+//     }, 1000);
 
-      socket.on("video_frame", handleFrame)
+//     const canvas = canvasRef.current;
+//     if (!canvas) return;
+//     const ctx = canvas.getContext('2d');
 
-      return () => {
-        socket.emit("stop_rtsp")
-        socket.off("video_frame", handleFrame)
-      }
-    }
-  }, [type, rtspUrl])
+//     const renderLoop = () => {
+//       if (!isRenderingRef.current && !(latestFrameRef.current === secondLastFrameRef.current)) {
+//         isRenderingRef.current = true;        
+//         let frame = latestFrameRef.current;
+//         secondLastFrameRef.current = latestFrameRef.current;
+        
+//         createImageBitmap(new Blob([frame]))
+//         .then((bitmap) => {
+//           ctx.clearRect(0, 0, canvas.width, canvas.height);
+//           ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+//           bitmap.close(); // Free up memory
+//         })
+//         .catch(console.error)
+//         .finally(() => {
+//           isRenderingRef.current = false;
+//           frame = null; // Free up memory
+//           counter++;
+//         });
+//       }
+
+//       requestAnimationFrame(renderLoop);
+//     };
+
+//     requestAnimationFrame(renderLoop);
+
+//     socket.on('video-frame', (data) => {
+//       // Always replace old frame with the newest one
+//       latestFrameRef.current = data;
+//     });
+
+//     return () => {
+//       socket.off('video-frame');
+//     };
+//   }, []);
+
+//   const handleStart = () => {
+//     socket.emit('start-stream');
+//   };
+
+//   const handleStop = () => {
+//     socket.emit('stop-stream');
+//   };
 
   return (
     <div className="w-[100%] h-[100%] overflow-hidden">
@@ -53,7 +97,7 @@ export default function CameraWindow() {
         </button>
       </div>
 
-      <div className="w-full h-full flex justify-center items-center bg-black">
+      <div>
         {type === "usb" && deviceId && (
           <Webcam
             audio={false}
@@ -62,7 +106,7 @@ export default function CameraWindow() {
             style={{ width: "100%", height: "100%", objectFit: "contain" }}
           />
         )}
-        {type === "rtsp" && <img ref={imgRef} className="max-w-full max-h-full" />}
+        {type === "rtsp" && <canvas ref={canvasRef} width="640" height="480" />}
       </div>
     </div>
   )

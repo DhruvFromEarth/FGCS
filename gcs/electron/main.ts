@@ -174,19 +174,19 @@ function closeWebcamPopout(){
 ipcMain.handle("openWebcamWindow", (_, videoStreamId, name, aspect) => {openWebcamPopout(videoStreamId, name, aspect)})
 ipcMain.handle("closeWebcamWindow", () => closeWebcamPopout())
 
-ipcMain.on("open-camera-window", (event, params) => {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-    },
-  })
+// ipcMain.on("open-camera-window", (event, params) => {
+//   const win = new BrowserWindow({
+//     width: 800,
+//     height: 600,
+//     webPreferences: {
+//       preload: path.join(__dirname, "preload.js"),
+//     },
+//   })
 
-  // Example: ?type=rtsp&url=...&deviceName=...
-  const query = new URLSearchParams(params).toString()
-  win.loadURL(`file://${__dirname}/../dist/index.html/camera-window?${query}`)
-})
+//   // Example: ?type=rtsp&url=...&deviceName=...
+//   const query = new URLSearchParams(params).toString()
+//   win.loadURL(`file://${__dirname}/../dist/index.html/camera-window?${query}`)
+// })
 
 ipcMain.handle("isMac", () => { return process.platform == "darwin" })
 ipcMain.on('close', () => {closeWithBackend()})

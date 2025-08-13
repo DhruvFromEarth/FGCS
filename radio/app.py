@@ -3,10 +3,13 @@ import app.droneStatus as droneStatus
 from app import create_app, socketio
 from pathlib import Path
 from dotenv import load_dotenv
+from app.video_stream import register_stream_handlers
 # from app.video_stream import stream_rtsp
 # from threading import Thread
 
 app = create_app(debug=True)
+
+register_stream_handlers(socketio)
 
 if __name__ == "__main__":
     print("Loading dotenv.")
