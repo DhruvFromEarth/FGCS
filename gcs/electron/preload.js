@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   getVersion: () => ipcRenderer.invoke('app:get-version'),
   getSettings: () => ipcRenderer.invoke('getSettings'),
   saveSettings: (settings) => ipcRenderer.invoke('setSettings', settings),
-  openWebcamWindow: (id, name, aspect) => ipcRenderer.invoke("openWebcamWindow", id, name, aspect),
+  openWebcamWindow: (id, name, aspect, cameraType) => ipcRenderer.invoke("openWebcamWindow", id, name, aspect, cameraType),
   closeWebcamWindow: () => ipcRenderer.invoke('closeWebcamWindow'),
   onCameraWindowClose: (callback) => ipcRenderer.on("webcam-closed", () => callback()),
   // openCameraWindow: (params) => ipcRenderer.send("open-camera-window", params),

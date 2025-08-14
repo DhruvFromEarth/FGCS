@@ -119,9 +119,9 @@ let currentResizeHandler: ResizeCallback | null = null
  * @param id The device stream ID
  * @param name The name of the device
  */
-function loadWebcam(id: string = "", name: string = ""){
+function loadWebcam(id: string = "", name: string = "", cameraType: string = ""){
 
-  const params: string = id && name ? "/webcam?deviceId=" + id + "&deviceName=" + name : "/webcam";
+  const params: string = id && name ? "/webcam?deviceId=" + id + "&deviceName=" + name + "&cameraType=" + cameraType : "/webcam";
 
   if (VITE_DEV_SERVER_URL)
     webcamPopoutWin?.loadURL(VITE_DEV_SERVER_URL + "#" + params)
@@ -129,10 +129,10 @@ function loadWebcam(id: string = "", name: string = ""){
     webcamPopoutWin?.loadFile(path.join(process.env.DIST, 'index.html'), {hash: params})
 }
 
-function openWebcamPopout(videoStreamId: string, name: string, aspect: number){
+function openWebcamPopout(videoStreamId: string, name: string, aspect: number, cameraType: string){
 
   if (webcamPopoutWin === null) return;
-  loadWebcam(videoStreamId, name);
+  loadWebcam(videoStreamId, name, cameraType);
 
   webcamPopoutWin.setTitle(name);
 
@@ -171,7 +171,7 @@ function closeWebcamPopout(){
   win?.webContents.send("webcam-closed");
 }
 
-ipcMain.handle("openWebcamWindow", (_, videoStreamId, name, aspect) => {openWebcamPopout(videoStreamId, name, aspect)})
+ipcMain.handle("openWebcamWindow", (_, videoStreamId, name, aspect, cameraType) => {openWebcamPopout(videoStreamId, name, aspect, cameraType)})
 ipcMain.handle("closeWebcamWindow", () => closeWebcamPopout())
 
 // ipcMain.on("open-camera-window", (event, params) => {

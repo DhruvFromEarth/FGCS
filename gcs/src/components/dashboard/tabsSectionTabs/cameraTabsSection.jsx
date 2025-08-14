@@ -64,6 +64,7 @@ export default function CameraTabsSection({ tabPadding }) {
         deviceId,
         streamTrack.label,
         streamAspect,
+        cameraType,
       )
     setPictureInPicture(!pictureInPicture)
   }
@@ -103,7 +104,7 @@ export default function CameraTabsSection({ tabPadding }) {
             isRenderingRef.current = false;
             counter++;
           }
-        );
+          );
         secondLastFrameRef.current = latestFrameRef.current;
       }
       requestAnimationFrame(renderLoop);
@@ -140,6 +141,9 @@ export default function CameraTabsSection({ tabPadding }) {
   };
 
   const handleCameraTypeChange = (value) => {
+    if (cameraType === "rtsp" && value !== "rtsp") {
+      handleStop();
+    }
     setCameraType(value);
 
     if (value === "none") {
@@ -173,51 +177,8 @@ export default function CameraTabsSection({ tabPadding }) {
           className={`w-[100%] max-w-[350px] @xl:max-w-[640px]`}
         />
 
-        {/* RTSP URL input */}
-        {/* {cameraType === "rtsp" && (
-          <input
-            type="text"
-            placeholder="Enter RTSP URL"
-            value={rtspUrl}
-            onChange={(event) => setRtspUrl(event.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                handleStart({ type: "rtsp", url: rtspUrl });
-                setRtspUrl(event.currentTarget.value)
-              }
-            }}
-            className="w-full"
-          />
-        )} */}
-        {/* <Select
-          placeholder="Select camera input"
-          data={devices.map((device) => {
-            return { value: device.deviceId, label: device.label }
-          })} // .concat({ value: "rtsp://192.168.144.25:8554/main.264", label: "rtsp://192.168.144.25:8554/main.264" })}
-          value={deviceId}
-          onChange={setDeviceId}
-          className={`w-[100%] max-w-[350px] @xl:max-w-[640px]`}
-        /> */}
-        {/* <Select
-          placeholder="Select IP camera" //change this logic and take camera ip from user input
-          data={[
-            { value: "rtsp://192.168.144.25:8554/main.264", label: "Drone Camera 1" },
-          ]}
-          // onChange={(value) => {
-          //   if (value) {
-          //     window.ipcRenderer.openCameraWindow({
-          //       type: "rtsp",
-          //       url: value,
-          //       deviceName: "IP Camera",
-          //     })}}}
-          onChange={handleStart}
-          className={"w-full max-w-[350px] @xl:max-w-[640px]"}
-          // disabled={ rtspStreamRunningRef.current === false}
-        /> */}
-
         {console.log("deviceId :", deviceId, "cameraType :", cameraType)}
 
-        {/* { true ? ( */}
         {(cameraType === "rtsp") ? (
 
           <div className="relative">
@@ -228,23 +189,30 @@ export default function CameraTabsSection({ tabPadding }) {
               value={rtspUrl}
               onChange={(event) => {
                 setRtspUrl(event.currentTarget.value);
-                // handleStart();
-                // console.log("camertype :", cameraType, "rtspStreamRunningRef :", rtspStreamRunningRef.current);
               }}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   setRtspUrl(event.currentTarget.value);
                   handleStart();
-                  console.log("camertype :", cameraType, "rtspStreamRunningRef :", rtspStreamRunningRef.current);
+                  console.log("cameratype :", cameraType, "rtspStreamRunningRef :", rtspStreamRunningRef.current);
                 }
               }}
               className="w-full border border-gray-500 p-1 rounded mb-2"
             />
 
             {console.log("frame render")}
-            <canvas ref={canvasRef} alt="rtsp cam Feed" className="bg-gray-500 max-w-[350px] w-[100%] @xl:max-w-[640px]" />
-
-            {/* { rtspStreamRunningRef.current && <button onClick={handleStop}>Stop Stream</button>} */}
+            <canvas ref={canvasRef} alt="rtsp cam Feed" className="max-w-[350px] w-[100%] @xl:max-w-[640px]" />
+            {streamLoaded && (
+              <button
+                className="absolute top-2 right-2 bg-falcongrey-900/60 p-1 rounded-[0.2em]"
+                onClick={() => toggleWebcamPopout()}
+              >
+                <IconExternalLink
+                  stroke={2}
+                  className="stroke-slate-200 size-5"
+                />
+              </button>
+            )}
           </div>
 
         ) : (cameraType === "webcam") ? (

@@ -30,7 +30,7 @@ def register_stream_handlers(socketio):
 
             # Emit frame over socket
             socketio.emit('video-frame', buffer.tobytes())
-            # time.sleep(0.03)  # ~30 fps
+            # time.sleep(0.001)  # ~30 fps
             cv2.waitKey(1)
 
         cap.release()

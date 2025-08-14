@@ -9,75 +9,77 @@ import { socket } from "../../../helpers/socket"
 export default function CameraWindow() {
   const [searchParams] = useSearchParams()
   const videoRef = useRef(null)
-  const imgRef = useRef(null)
+  // const imgRef = useRef(null)
 
   const type = searchParams.get("type")
   const deviceId = searchParams.get("deviceId")
   const rtspUrl = searchParams.get("url")
   const deviceName = searchParams.get("deviceName")
+  const cameraType = searchParams.get("cameraType")
+  console.log("type :", type, "deviceId :", deviceId, "rtspUrl :", rtspUrl, "deviceName :", deviceName, "cameraType :", cameraType)
 
-//   const canvasRef = useRef(null);
-//   const latestFrameRef = useRef(null);
-//   const secondLastFrameRef = useRef(null);
-//   const isRenderingRef = useRef(false);
+  const canvasRef = useRef(null);
+  const latestFrameRef = useRef(null);
+  const secondLastFrameRef = useRef(null);
+  const isRenderingRef = useRef(false);
 
-//   useEffect(() => {
-//     socket.on('connect', () => {
-//       console.log(`Connected: ${socket.id}`);
-//     });
-//     console.log("testing useEffect.");
-//     let counter = 0;
-//     const interval = setInterval(() => {
-//       console.log(`${counter} fps`);
-//       counter = 0;
-//     }, 1000);
+  useEffect(() => {
+    socket.on('connect', () => {
+      console.log(`Connected: ${socket.id}`);
+    });
+    console.log("testing useEffect.");
+    let counter = 0;
+    const interval = setInterval(() => {
+      console.log(`${counter} fps`);
+      counter = 0;
+    }, 1000);
 
-//     const canvas = canvasRef.current;
-//     if (!canvas) return;
-//     const ctx = canvas.getContext('2d');
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
 
-//     const renderLoop = () => {
-//       if (!isRenderingRef.current && !(latestFrameRef.current === secondLastFrameRef.current)) {
-//         isRenderingRef.current = true;        
-//         let frame = latestFrameRef.current;
-//         secondLastFrameRef.current = latestFrameRef.current;
-        
-//         createImageBitmap(new Blob([frame]))
-//         .then((bitmap) => {
-//           ctx.clearRect(0, 0, canvas.width, canvas.height);
-//           ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-//           bitmap.close(); // Free up memory
-//         })
-//         .catch(console.error)
-//         .finally(() => {
-//           isRenderingRef.current = false;
-//           frame = null; // Free up memory
-//           counter++;
-//         });
-//       }
+    const renderLoop = () => {
+      if (!isRenderingRef.current && !(latestFrameRef.current === secondLastFrameRef.current)) {
+        isRenderingRef.current = true;
+        let frame = latestFrameRef.current;
+        secondLastFrameRef.current = latestFrameRef.current;
 
-//       requestAnimationFrame(renderLoop);
-//     };
+        createImageBitmap(new Blob([frame]))
+          .then((bitmap) => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+            bitmap.close(); // Free up memory
+          })
+          .catch(console.error)
+          .finally(() => {
+            isRenderingRef.current = false;
+            frame = null; // Free up memory
+            counter++;
+          });
+      }
 
-//     requestAnimationFrame(renderLoop);
+      requestAnimationFrame(renderLoop);
+    };
 
-//     socket.on('video-frame', (data) => {
-//       // Always replace old frame with the newest one
-//       latestFrameRef.current = data;
-//     });
+    requestAnimationFrame(renderLoop);
 
-//     return () => {
-//       socket.off('video-frame');
-//     };
-//   }, []);
+    socket.on('video-frame', (data) => {
+      // Always replace old frame with the newest one
+      latestFrameRef.current = data;
+    });
 
-//   const handleStart = () => {
-//     socket.emit('start-stream');
-//   };
+    return () => {
+      socket.off('video-frame');
+    };
+  }, []);
 
-//   const handleStop = () => {
-//     socket.emit('stop-stream');
-//   };
+  const handleStart = () => {
+    socket.emit('start-stream');
+  };
+
+  const handleStop = () => {
+    socket.emit('stop-stream');
+  };
 
   return (
     <div className="w-[100%] h-[100%] overflow-hidden">
@@ -98,7 +100,7 @@ export default function CameraWindow() {
       </div>
 
       <div>
-        {type === "usb" && deviceId && (
+        {cameraType === "webcam" && deviceId && (
           <Webcam
             audio={false}
             ref={videoRef}
@@ -106,7 +108,7 @@ export default function CameraWindow() {
             style={{ width: "100%", height: "100%", objectFit: "contain" }}
           />
         )}
-        {type === "rtsp" && <canvas ref={canvasRef} width="640" height="480" />}
+        {cameraType === "rtsp" && <canvas ref={canvasRef} width="640" height="480" />}
       </div>
     </div>
   )
