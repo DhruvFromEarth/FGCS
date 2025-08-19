@@ -7,6 +7,7 @@ import { Commands } from "./spotlight/commandHandler"
 // Wrappers
 import SingleRunWrapper from "./SingleRunWrapper"
 import { SettingsProvider } from "../helpers/settingsProvider"
+import VideoStreamProvider from "../helpers/VideoStreamProvider"
 
 // Routes
 import FLA from "../fla"
@@ -15,7 +16,8 @@ import Video from "../video"
 import Missions from "../missions"
 import Params from "../params"
 import Config from "../config"
-import CameraWindow from "./dashboard/webcam/webcam"
+import CameraWindow from "./dashboard/popout/webcam"
+import RtspCanvasPage from "./dashboard/popout/RtspCanvasPage"
 import Dashboard from "../dashboard"
 
 // Redux
@@ -26,12 +28,13 @@ import ErrorBoundaryFallback from "./error/errorBoundary"
 
 export default function AppContent() {
   // Conditionally render UI so the webcam route is literally just a webcam
-  const renderUI = useLocation().pathname !== "/webcam"
+    const popoutCondition = useLocation().pathname === "/webcam" || useLocation().pathname.toLowerCase().startsWith("/rtsp");
 
   return (
     <SettingsProvider>
+      <VideoStreamProvider>
       <SingleRunWrapper>
-        {renderUI && <Toolbar />}
+        {!popoutCondition && <Toolbar />}
         <ErrorBoundary fallbackRender={ErrorBoundaryFallback}>
           <SettingsModal />
           <Routes>
@@ -42,6 +45,7 @@ export default function AppContent() {
             <Route path="/params" element={<Params />} />
             <Route path="/config" element={<Config />} />
             <Route path="/webcam" element={<CameraWindow />} />
+            <Route path="/rtsp" element={<RtspCanvasPage />} />
             <Route
               path="/fla"
               element={
@@ -52,9 +56,10 @@ export default function AppContent() {
             />
             <Route path="/missions" element={<Missions />} />
           </Routes>
-          {renderUI && <Commands />}
+          {!popoutCondition && <Commands />}
         </ErrorBoundary>
       </SingleRunWrapper>
+      </VideoStreamProvider>
     </SettingsProvider>
   )
 }

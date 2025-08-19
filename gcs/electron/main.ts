@@ -3,6 +3,7 @@ import { ChildProcessWithoutNullStreams, spawn, spawnSync } from 'node:child_pro
 import fs from 'node:fs'
 import path from 'node:path'
 import packageInfo from '../package.json'
+import { screen } from 'electron'; // for popout window
 
 // @ts-expect-error - no types available
 import openFile, { getRecentFiles, clearRecentFiles } from './fla'
@@ -45,9 +46,9 @@ interface Settings {
 
 let userSettings: Settings | null = null
 
-function saveUserConfiguration(settings: Settings){
+function saveUserConfiguration(settings: Settings) {
   userSettings = settings;
-  fs.writeFileSync(path.join(app.getPath('userData'), 'settings.json'), JSON.stringify(userSettings, null,  2), 'utf-8');
+  fs.writeFileSync(path.join(app.getPath('userData'), 'settings.json'), JSON.stringify(userSettings, null, 2), 'utf-8');
 }
 
 /**
@@ -55,9 +56,9 @@ function saveUserConfiguration(settings: Settings){
  * @param configPath The path to the configuration file
  * @returns
  */
-function checkAppVersion(configPath: string){
+function checkAppVersion(configPath: string) {
 
-  if (userSettings === null){
+  if (userSettings === null) {
     console.warn("Attempting to check app version when user settings have not been loaded");
     return;
   }
@@ -74,7 +75,7 @@ function checkAppVersion(configPath: string){
  *
  * @returns
  */
-function getUserConfiguration(){
+function getUserConfiguration() {
 
   // Return the already loaded user settings if loaded
   console.log("Fetching user settings!");
@@ -88,9 +89,9 @@ function getUserConfiguration(){
   // Write version and blank settings to user config if doesn't exist
   if (!fs.existsSync(config)) {
     console.log("Generating user settings")
-    userSettings = {version: app.getVersion(), settings: {}}
+    userSettings = { version: app.getVersion(), settings: {} }
     fs.writeFileSync(config, JSON.stringify(userSettings))
-  } else{
+  } else {
     console.log("Reading user settings from config file " + config)
     userSettings = JSON.parse(fs.readFileSync(config, 'utf-8'))
     checkAppVersion(config)
@@ -98,8 +99,8 @@ function getUserConfiguration(){
   return userSettings
 }
 
-ipcMain.handle("getSettings", () => {return getUserConfiguration(); })
-ipcMain.handle("setSettings", (_, settings) => {saveUserConfiguration(settings)})
+ipcMain.handle("getSettings", () => { return getUserConfiguration(); })
+ipcMain.handle("setSettings", (_, settings) => { saveUserConfiguration(settings) })
 
 // Webcam popout window
 
@@ -119,17 +120,17 @@ let currentResizeHandler: ResizeCallback | null = null
  * @param id The device stream ID
  * @param name The name of the device
  */
-function loadWebcam(id: string = "", name: string = "", cameraType: string = ""){
+function loadWebcam(id: string = "", name: string = "", cameraType: string = "") {
 
-  const params: string = id && name ? "/webcam?deviceId=" + id + "&deviceName=" + name + "&cameraType=" + cameraType : "/webcam";
+  const params: string = id && name ? "/" + cameraType + "?deviceId=" + id + "&deviceName=" + name + "&cameraType=" + cameraType : "/" + cameraType;
 
   if (VITE_DEV_SERVER_URL)
     webcamPopoutWin?.loadURL(VITE_DEV_SERVER_URL + "#" + params)
   else
-    webcamPopoutWin?.loadFile(path.join(process.env.DIST, 'index.html'), {hash: params})
+    webcamPopoutWin?.loadFile(path.join(process.env.DIST, 'index.html'), { hash: params })
 }
 
-function openWebcamPopout(videoStreamId: string, name: string, aspect: number, cameraType: string){
+function openWebcamPopout(videoStreamId: string, name: string, aspect: number, cameraType: string) {
 
   if (webcamPopoutWin === null) return;
   loadWebcam(videoStreamId, name, cameraType);
@@ -141,7 +142,7 @@ function openWebcamPopout(videoStreamId: string, name: string, aspect: number, c
     webcamPopoutWin.off("will-resize", currentResizeHandler)
 
   // Create resize handler to maintain aspect ratio
-  currentResizeHandler = function(event, newBounds){
+  currentResizeHandler = function (event, newBounds) {
     event.preventDefault();
 
     const newWidth = newBounds.width;
@@ -160,44 +161,74 @@ function openWebcamPopout(videoStreamId: string, name: string, aspect: number, c
   // Ensure initial size fits the aspect ratio ()
   webcamPopoutWin.setSize(webcamPopoutWin.getBounds().width, Math.round(webcamPopoutWin.getBounds().width / aspect) + WEBCAM_TITLEBAR_HEIGHT);
 
-  webcamPopoutWin.setMinimumSize(Math.round(aspect * (MIN_WEBCAM_HEIGHT-28)), MIN_WEBCAM_HEIGHT);
+  webcamPopoutWin.setMinimumSize(Math.round(aspect * (MIN_WEBCAM_HEIGHT - 28)), MIN_WEBCAM_HEIGHT);
   webcamPopoutWin.show();
 
 }
 
-function closeWebcamPopout(){
+function closeWebcamPopout() {
   webcamPopoutWin?.hide()
   loadWebcam();
   win?.webContents.send("webcam-closed");
 }
 
-ipcMain.handle("openWebcamWindow", (_, videoStreamId, name, aspect, cameraType) => {openWebcamPopout(videoStreamId, name, aspect, cameraType)})
+ipcMain.handle("openWebcamWindow", (_, videoStreamId, name, aspect, cameraType) => { openWebcamPopout(videoStreamId, name, aspect, cameraType) })
 ipcMain.handle("closeWebcamWindow", () => closeWebcamPopout())
+// ipcMain.handle("openrtspcamwindow", (_, streamId, streamName, streamAspect, cameraType) => {openrtspcamPopout(streamId, streamName, streamAspect, cameraType)})
+// ipcMain.handle("closertspcamwindow", () => closertspcamPopout())
 
-// ipcMain.on("open-camera-window", (event, params) => {
-//   const win = new BrowserWindow({
-//     width: 800,
-//     height: 600,
-//     webPreferences: {
-//       preload: path.join(__dirname, "preload.js"),
-//     },
-//   })
+// function openrtspcamPopout(streamId: string, streamName: string, streamAspect: number, cameraType: string){
 
-//   // Example: ?type=rtsp&url=...&deviceName=...
-//   const query = new URLSearchParams(params).toString()
-//   win.loadURL(`file://${__dirname}/../dist/index.html/camera-window?${query}`)
-// })
+//   if (webcamPopoutWin === null) return;
+//   loadWebcam(streamId, streamName, cameraType);
+
+//   webcamPopoutWin.setTitle(streamName);
+
+//   // Remove previous resize handler
+//   if (currentResizeHandler)
+//     webcamPopoutWin.off("will-resize", currentResizeHandler)
+
+//   // Create resize handler to maintain streamAspect ratio
+//   currentResizeHandler = function(event, newBounds){
+//     event.preventDefault();
+
+//     const newWidth = newBounds.width;
+//     const newHeight = Math.round((newWidth / streamAspect) + WEBCAM_TITLEBAR_HEIGHT);
+
+//     webcamPopoutWin?.setBounds({
+//       x: newBounds.x,
+//       y: newBounds.y,
+//       width: newWidth,
+//       height: newHeight
+//     });
+//   }
+
+//   webcamPopoutWin.on('will-resize', currentResizeHandler);
+
+//   // Ensure initial size fits the streamAspect ratio ()
+//   webcamPopoutWin.setSize(webcamPopoutWin.getBounds().width, Math.round(webcamPopoutWin.getBounds().width / streamAspect) + WEBCAM_TITLEBAR_HEIGHT);
+
+//   webcamPopoutWin.setMinimumSize(Math.round(streamAspect * (MIN_WEBCAM_HEIGHT-28)), MIN_WEBCAM_HEIGHT);
+//   webcamPopoutWin.show();
+
+// }
+
+// function closertspcamPopout(){
+//   webcamPopoutWin?.hide()
+//   loadWebcam();
+//   win?.webContents.send("webcam-closed");
+// }
 
 ipcMain.handle("isMac", () => { return process.platform == "darwin" })
-ipcMain.on('close', () => {closeWithBackend()})
-ipcMain.on('minimise', () => {getWindow()?.minimize()})
-ipcMain.on('maximise', () => {getWindow()?.isMaximized() ? getWindow()?.unmaximize() : getWindow()?.maximize()})
+ipcMain.on('close', () => { closeWithBackend() })
+ipcMain.on('minimise', () => { getWindow()?.minimize() })
+ipcMain.on('maximise', () => { getWindow()?.isMaximized() ? getWindow()?.unmaximize() : getWindow()?.maximize() })
 
-ipcMain.on("reload", () => {getWindow()?.reload()})
-ipcMain.on("force_reload", () => {getWindow()?.webContents.reloadIgnoringCache()})
-ipcMain.on("toggle_developer_tools", () => {getWindow()?.webContents.toggleDevTools()})
-ipcMain.on("actual_size", () => {getWindow()?.webContents.setZoomFactor(1)})
-ipcMain.on("toggle_fullscreen", () => {getWindow()?.isFullScreen() ? getWindow()?.setFullScreen(false) : getWindow()?.setFullScreen(true)})
+ipcMain.on("reload", () => { getWindow()?.reload() })
+ipcMain.on("force_reload", () => { getWindow()?.webContents.reloadIgnoringCache() })
+ipcMain.on("toggle_developer_tools", () => { getWindow()?.webContents.toggleDevTools() })
+ipcMain.on("actual_size", () => { getWindow()?.webContents.setZoomFactor(1) })
+ipcMain.on("toggle_fullscreen", () => { getWindow()?.isFullScreen() ? getWindow()?.setFullScreen(false) : getWindow()?.setFullScreen(true) })
 ipcMain.on("zoom_in", () => {
   const window = getWindow()?.webContents;
   window?.setZoomFactor(window?.getZoomFactor() + 0.1)
@@ -206,7 +237,7 @@ ipcMain.on("zoom_out", () => {
   const window = getWindow()?.webContents;
   window?.setZoomFactor(window?.getZoomFactor() - 0.1)
 })
-ipcMain.on("openFileInExplorer", (_event, filePath) => {shell.showItemInFolder(filePath)})
+ipcMain.on("openFileInExplorer", (_event, filePath) => { shell.showItemInFolder(filePath) })
 
 function createWindow() {
   win = new BrowserWindow({
@@ -223,11 +254,24 @@ function createWindow() {
     frame: false,
   })
 
+  // To display popout in fixed position (center)
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+  const windowWidth = 400;
+  const windowHeight = 300;
+
   // Create webcam window keep it hidden to avoid delay between popping out windows
   webcamPopoutWin = new BrowserWindow({
-    width: 400,
-    height: 300,
-    frame: false,
+    width: windowWidth,
+    height: windowHeight,
+    x: screenWidth - windowWidth,
+    y: screenHeight - windowHeight + 18,
+    // x: Math.floor((screenWidth - windowWidth) / 2),
+    // y: Math.floor((screenHeight - windowHeight) / 2),
+    // parent: win,
+    frame: false, //removes the generic titlebar when false.
+    autoHideMenuBar: true,
+    resizable: true,
+    // titleBarStyle: 'hidden',
     alwaysOnTop: true,
     icon: path.join(process.env.VITE_PUBLIC, 'app_icon.ico'),
     show: false,
@@ -241,6 +285,11 @@ function createWindow() {
     fullscreenable: false,
   });
 
+  // webcamPopoutWin.on('close', (event) => {
+  //   event.preventDefault();
+  //   webcamPopoutWin?.hide();
+  //   win?.webContents.send('webcam-closed');
+  // });
 
   // We load the webcam route here to prevent having to load the page on popout
   loadWebcam();
@@ -274,7 +323,7 @@ function createWindow() {
   })
 
   // Set Main Menu on Mac Only
-  if(process.platform === 'darwin'){
+  if (process.platform === 'darwin') {
     setMainMenu()
   }
 
@@ -293,7 +342,7 @@ function setMainMenu() {
 
             const options: MessageBoxOptions = {
               type: 'info',
-              buttons: [ 'OK','Report a bug',],
+              buttons: ['OK', 'Report a bug',],
               title: 'About FGCS',
               message: 'FGCS Version: ' + app.getVersion(), // get version from package.json
               detail: 'For more information, visit our GitHub page.',
@@ -301,7 +350,7 @@ function setMainMenu() {
               defaultId: 1,
             };
 
-          const response = await dialog.showMessageBox(options);
+            const response = await dialog.showMessageBox(options);
             if (response.response === 1) {
               shell.openExternal(packageInfo.bugs.url)
             }
@@ -364,7 +413,7 @@ function startBackend() {
   console.log('Starting backend');
 
   // Add more platforms here
-  const backendPaths: Partial<Record<NodeJS.Platform, string>> ={
+  const backendPaths: Partial<Record<NodeJS.Platform, string>> = {
     win32: 'extras/fgcs_backend.exe',
     darwin: path.join(process.resourcesPath, '../extras', 'fgcs_backend.app', 'Contents', 'MacOS', 'fgcs_backend')
   };
@@ -416,7 +465,7 @@ app.on('window-all-closed', () => {
 // To ensure that the backend process is killed with Cmd + Q on macOS,
 // listen to the before-quit event.
 app.on('before-quit', () => {
-  if(process.platform === 'darwin' && pythonBackend){
+  if (process.platform === 'darwin' && pythonBackend) {
     console.log('Stopping backend')
     spawnSync('pkill', ['-f', 'fgcs_backend']);
     pythonBackend = null

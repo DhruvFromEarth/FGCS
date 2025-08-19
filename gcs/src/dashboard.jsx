@@ -52,6 +52,7 @@ import StatusMessages from "./components/dashboard/statusMessages"
 import TabsSection from "./components/dashboard/tabsSection"
 import TelemetrySection from "./components/dashboard/telemetry"
 import Layout from "./components/layout"
+import CameraBox from "./components/dashboard/cameraBox"
 
 // Tailwind styling
 import resolveConfig from "tailwindcss/resolveConfig"
@@ -433,9 +434,8 @@ export default function Dashboard() {
           />
           <StatusSection
             icon={<IconGps />}
-            value={`(${gpsData.lat !== undefined ? (gpsData.lat * 1e-7).toFixed(6) : 0}, ${
-              gpsData.lon !== undefined ? (gpsData.lon * 1e-7).toFixed(6) : 0
-            })`}
+            value={`(${gpsData.lat !== undefined ? (gpsData.lat * 1e-7).toFixed(6) : 0}, ${gpsData.lon !== undefined ? (gpsData.lon * 1e-7).toFixed(6) : 0
+              })`}
             tooltip="GPS (lat, lon)"
           />
           <StatusSection
@@ -492,6 +492,10 @@ export default function Dashboard() {
             </ResizableBox>
           </div>
         )}
+
+        {/* Bottom right camera window */}
+        <CameraBox />
+
       </div>
     </Layout>
   )

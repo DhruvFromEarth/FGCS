@@ -14,6 +14,7 @@ import { Tabs, Select } from "@mantine/core"
 import Webcam from "react-webcam"
 import { IconExternalLink, IconVideoOff } from "@tabler/icons-react"
 import { socket } from "../../../helpers/socket"
+import CanvasRenderer from "../../canvasRenderer"
 
 export default function CameraTabsSection({ tabPadding }) {
   // Camera devices
@@ -38,6 +39,7 @@ export default function CameraTabsSection({ tabPadding }) {
   const isRenderingRef = useRef(false);
   const rtspStreamRunningRef = useRef(false);
 
+  // const [showCanvas, setShowCanvas] = useState(true);
   const [cameraType, setCameraType] = useState("");
   const [rtspUrl, setRtspUrl] = useState("");
   const [rerunUseEffect, setRerunUseEffect] = useState(0);
@@ -55,9 +57,9 @@ export default function CameraTabsSection({ tabPadding }) {
 
   function toggleWebcamPopout() {
     const streamTrack = videoRef.current.video.srcObject.getTracks()[0]
-    const streamAspect =
-      streamTrack.getSettings().width / streamTrack.getSettings().height
+    const streamAspect = streamTrack.getSettings().width / streamTrack.getSettings().height
 
+    console.log("streamTrack.label, streamAspect", streamTrack.label, streamAspect)
     pictureInPicture
       ? window.ipcRenderer.closeWebcamWindow()
       : window.ipcRenderer.openWebcamWindow(
@@ -69,66 +71,88 @@ export default function CameraTabsSection({ tabPadding }) {
     setPictureInPicture(!pictureInPicture)
   }
 
+  const toggleRTSPcamPopout = () => {
+    console.log("RTSP Camera Popout");
+
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const streamAspect = width / height;
+    const streamId = rtspUrl;
+    const streamName = "RTSP";
+    const cameraType = "RTSP";
+
+    pictureInPicture
+      ? window.ipcRenderer.closeWebcamWindow()
+      : window.ipcRenderer.openWebcamWindow(
+        streamId,
+        streamName,
+        streamAspect,
+        cameraType
+      );
+
+    setPictureInPicture(!pictureInPicture);
+  };
+
   function onStreamLoaded() {
     setInvalidStream(false)
     setStreamLoaded(true)
   }
 
-  useEffect(() => {
-    socket.on('connect', () => {
-      console.log(`Connected: ${socket.id}`);
-    });
-    console.log("testing useEffect.");
-    let counter = 0;
-    const fpsinterval = setInterval(() => {
-      console.log(`${counter} fps`);
-      counter = 0;
-    }, 1000);
+  //   useEffect(() => {
+  //     socket.on('connect', () => {
+  //       console.log(`Connected: ${socket.id}`);
+  //     });
+  //     console.log("testing useEffect.");
+  //     let counter = 0;
+  //     const fpsinterval = setInterval(() => {
+  //       console.log(`${counter} fps`);
+  //       counter = 0;
+  //     }, 1000);
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+  //     const canvas = canvasRef.current;
+  //     if (!canvas) return;
+  //     const ctx = canvas.getContext('2d');
 
-    const renderLoop = () => {
-      if (!isRenderingRef.current && !(latestFrameRef.current === secondLastFrameRef.current)) {
-        isRenderingRef.current = true;
+  //     const renderLoop = () => {
+  //       if (!isRenderingRef.current && !(latestFrameRef.current === secondLastFrameRef.current)) {
+  //         isRenderingRef.current = true;
 
-        createImageBitmap(new Blob([latestFrameRef.current]))
-          .then((bitmap) => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-            bitmap.close(); // Free up memory
-          })
-          .catch(console.error)
-          .finally(() => {
-            isRenderingRef.current = false;
-            counter++;
-          }
-          );
-        secondLastFrameRef.current = latestFrameRef.current;
-      }
-      requestAnimationFrame(renderLoop);
-    };
+  //         createImageBitmap(new Blob([latestFrameRef.current]))
+  //           .then((bitmap) => {
+  //             ctx.clearRect(0, 0, canvas.width, canvas.height);
+  //             ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  //             bitmap.close(); // Free up memory
+  //           })
+  //           .catch(console.error)
+  //           .finally(() => {
+  //             isRenderingRef.current = false;
+  //             counter++;
+  //           }
+  //           );
+  //         secondLastFrameRef.current = latestFrameRef.current;
+  //       }
+  //       requestAnimationFrame(renderLoop);
+  //     };
 
-    requestAnimationFrame(renderLoop);
+  //     requestAnimationFrame(renderLoop);
 
-    socket.on('video-frame', (data) => {
-      // Always replace old frame with the newest one
-      latestFrameRef.current = data;
-    });
+  //     socket.on('video-frame', (data) => {
+  //       // Always replace old frame with the newest one
+  //       latestFrameRef.current = data;
+  //     });
 
-    return () => {
-      // clearInterval(fpsinterval); //this is running after new fpsinterval is declared, so fps is not logging.
-      socket.off('video-frame');
-    };
-  }, [rerunUseEffect]);
+  //     return () => {
+  //       // clearInterval(fpsinterval); //this is running after new fpsinterval is declared, so fps is not logging.
+  //       socket.off('video-frame');
+  //     };
+  //   }, [rerunUseEffect]);
 
   // "video stream stopped" will print after "starting video stream..." in console, async await has no effect here.
   const handleStart = () => {
-    // Clear previous interval if it exists
-    // if (fpsinterval) {
-    //   clearInterval(fpsinterval);
-    // }
     handleStop(); // Stop any existing stream before starting a new one
     socket.emit('start-stream', rtspUrl);
     rtspStreamRunningRef.current = true;
@@ -140,7 +164,7 @@ export default function CameraTabsSection({ tabPadding }) {
     rtspStreamRunningRef.current = false;
   };
 
-  const handleCameraTypeChange = (value) => {
+  const handleChange = (value) => {
     if (cameraType === "rtsp" && value !== "rtsp") {
       handleStop();
     }
@@ -173,11 +197,12 @@ export default function CameraTabsSection({ tabPadding }) {
             })
           ]}
           value={cameraType}
-          onChange={handleCameraTypeChange}
+          onChange={handleChange}
           className={`w-[100%] max-w-[350px] @xl:max-w-[640px]`}
         />
 
-        {console.log("deviceId :", deviceId, "cameraType :", cameraType)}
+        {/* //console.log all useStates */}
+        {console.log("rtspurl :", rtspUrl, "pictureInPicture :", pictureInPicture, "deviceId :", deviceId, "cameraType :", cameraType, "rerunUseEffect :", rerunUseEffect)}
 
         {(cameraType === "rtsp") ? (
 
@@ -201,18 +226,23 @@ export default function CameraTabsSection({ tabPadding }) {
             />
 
             {console.log("frame render")}
-            <canvas ref={canvasRef} alt="rtsp cam Feed" className="max-w-[350px] w-[100%] @xl:max-w-[640px]" />
-            {streamLoaded && (
+            <CanvasRenderer
+              ref={canvasRef}
+              className="max-w-[350px] w-[100%] @xl:max-w-[640px]"
+            />
+            {/* <canvas ref={canvasRef} alt="rtsp cam Feed" className="max-w-[350px] w-[100%] @xl:max-w-[640px]" /> */}
+
+            {//rtspStreamRunningRef.current && (
               <button
-                className="absolute top-2 right-2 bg-falcongrey-900/60 p-1 rounded-[0.2em]"
-                onClick={() => toggleWebcamPopout()}
+                className="absolute top-12 right-2 bg-falcongrey-900/60 p-1 rounded-[0.2em]"
+                onClick={() => toggleRTSPcamPopout()}
               >
                 <IconExternalLink
                   stroke={2}
                   className="stroke-slate-200 size-5"
                 />
               </button>
-            )}
+            }
           </div>
 
         ) : (cameraType === "webcam") ? (
