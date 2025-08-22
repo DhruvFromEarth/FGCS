@@ -18,6 +18,17 @@ def register_stream_handlers(socketio):
         streamPlayer = True
         cap = cv2.VideoCapture(url)
 
+        # check camera resolution
+        success, frame = cap.read()
+        if not success:
+            print("Failed to read frame.")
+            return
+        
+        height, width = frame.shape[:2]
+        print(f"Camera Resolution: {width} x {height}")
+        socketio.emit('camera-resolution', {'width': width, 'height': height})
+
+        # stream
         while cap.isOpened():
             success, frame = cap.read()
             if not success:

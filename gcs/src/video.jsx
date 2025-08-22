@@ -12,7 +12,7 @@ import { ResizableBox } from "react-resizable";
 
 // Custom component and helpers
 import Layout from "./components/layout"
-import CanvasRenderer from "./components/canvasRenderer"
+import CanvasRenderer from "./components/CanvasRenderer"
 
 // Mantine
 import { useSessionStorage } from "@mantine/hooks"
@@ -200,7 +200,7 @@ export default function Video() {
             {/* //console.log all useStates */}
             {console.log("deviceId :", deviceId, "cameraType :", cameraType, "rtspurl :", rtspUrl, "pictureInPicture :", pictureInPicture, "rerunUseEffect :", rerunUseEffect)}
 
-            {/* Webcam feed */}
+            {/* Camera feed */}
             {(cameraType === "rtsp") ? (
 
               <div className="relative">
@@ -254,7 +254,7 @@ export default function Video() {
 
                 {/* Overlay invalid stream message if video stream failed to be created */}
                 {invalidStream && (
-                  <div className="flex justify-center items-center absolute top-0 right-0 w-[100%] h-[100%] bg-falcongrey-700">
+                  <div className="flex justify-center items-center absolute top-10 right-0 w-[100%] h-[100%] bg-falcongrey-700">
                     <div className="flex flex-col items-center h-[75%] justify-center">
                       <IconVideoOff size={"50%"} />
                       <p className="">No video stream available</p>

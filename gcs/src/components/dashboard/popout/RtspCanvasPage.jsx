@@ -4,19 +4,19 @@ import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { socket } from "../../../helpers/socket";
 import { IconX } from "@tabler/icons-react";
-import CanvasRenderer from "../../canvasRenderer";
+import CanvasRenderer from "../../CanvasRenderer";
 
 export default function RtspCanvasPage() {
   // const canvasRef = useRef(null);
   const [params] = useSearchParams();
 
-  const streamId = params.get("deviceId");
+  // const streamId = params.get("deviceId");
   const width = 640;
   const height = 350;
 
-  const latestFrameRef = useRef(null);
-  const secondLastFrameRef = useRef(null);
-  const isRenderingRef = useRef(false);
+  // const latestFrameRef = useRef(null);
+  // const secondLastFrameRef = useRef(null);
+  // const isRenderingRef = useRef(false);
 
   //   useEffect(() => {
   //     const canvas = canvasRef.current;
@@ -61,6 +61,7 @@ export default function RtspCanvasPage() {
 
   return (
     <div className="w-[100%] h-[100%] overflow-hidden">
+      {/* Top bar */}
       <div className="flex flex-row items-center justify-between bg-falcongrey-800 h-7 allow-drag">
         <div className="text-slate-400 px-2 overflow-hidden text-ellipsis">
           RTSP
@@ -76,6 +77,8 @@ export default function RtspCanvasPage() {
           />
         </button>
       </div>
+
+      {/* canvas */}
       <CanvasRenderer
         // ref={canvasRef}
         width={width}

@@ -14,7 +14,7 @@ import { Tabs, Select } from "@mantine/core"
 import Webcam from "react-webcam"
 import { IconExternalLink, IconVideoOff } from "@tabler/icons-react"
 import { socket } from "../../../helpers/socket"
-import CanvasRenderer from "../../canvasRenderer"
+import CanvasRenderer from "../../CanvasRenderer"
 
 export default function CameraTabsSection({ tabPadding }) {
   // Camera devices
