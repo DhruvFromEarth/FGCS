@@ -4,15 +4,22 @@
 
 import { Table } from "@mantine/core"
 import React from "react"
+import { isGlobalFrameHomeCommand } from "../../helpers/filterMissions"
 import MissionItemsTableRow from "./missionItemsTableRow"
 
+// Redux
+import { useSelector } from "react-redux"
+import { selectDrawingMissionItems } from "../../redux/slices/missionSlice"
+
 function MissionItemsTableNonMemo({
-  missionItems,
-  aircraftType,
   updateMissionItem,
+  deleteMissionItem,
+  updateMissionItemOrder,
 }) {
+  const missionItems = useSelector(selectDrawingMissionItems)
+
   return (
-    <Table striped withTableBorder withColumnBorders>
+    <Table striped withTableBorder withColumnBorders stickyHeader>
       <Table.Thead>
         <Table.Tr>
           <Table.Th></Table.Th>
@@ -22,29 +29,26 @@ function MissionItemsTableNonMemo({
           <Table.Th>Param 3</Table.Th>
           <Table.Th>Param 4</Table.Th>
           <Table.Th>Lat</Table.Th>
-          <Table.Th>Long</Table.Th>
+          <Table.Th>Lng</Table.Th>
           <Table.Th>Alt</Table.Th>
           <Table.Th>Frame</Table.Th>
+          <Table.Th></Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
         {missionItems.map((missionItem, idx) => {
           // Skip home location
-          if (
-            missionItem.command === 16 &&
-            missionItem.frame === 0 &&
-            missionItem.mission_type === 0
-          ) {
+          if (idx === 0 && isGlobalFrameHomeCommand(missionItem)) {
             return null
           }
 
           return (
             <MissionItemsTableRow
               key={missionItem.id}
-              index={idx}
-              aircraftType={aircraftType}
               missionItem={missionItem}
               updateMissionItem={updateMissionItem}
+              deleteMissionItem={deleteMissionItem}
+              updateMissionItemOrder={updateMissionItemOrder}
             />
           )
         })}

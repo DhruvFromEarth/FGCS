@@ -1,4 +1,9 @@
+/*
+  The main wrapper for the app
+*/
+
 import { Route, Routes, useLocation } from "react-router-dom"
+import { useEffect } from "react"
 
 import Toolbar from "./toolbar/toolbar"
 import SettingsModal from "./settingsModal"
@@ -19,16 +24,24 @@ import Config from "../config"
 import CameraWindow from "./dashboard/popout/webcam"
 import RtspCanvasPage from "./dashboard/popout/RtspCanvasPage"
 import Dashboard from "../dashboard"
+import Navbar from "./navbar"
 
 // Redux
-import { store } from "../redux/store"
-import { Provider } from "react-redux"
+import { useDispatch } from "react-redux"
 import { ErrorBoundary } from "react-error-boundary"
+import AlertProvider from "./dashboard/alertProvider"
 import ErrorBoundaryFallback from "./error/errorBoundary"
+import { initSocket } from "../redux/slices/socketSlice"
 
 export default function AppContent() {
   // Conditionally render UI so the webcam route is literally just a webcam
     const popoutCondition = useLocation().pathname === "/webcam" || useLocation().pathname.toLowerCase().startsWith("/rtsp");
+
+  // Setup sockets for redux
+  const dispatch = useDispatch()
+  useEffect(() => {
+    dispatch(initSocket())
+  }, [])
 
   return (
     <SettingsProvider>
@@ -37,8 +50,16 @@ export default function AppContent() {
         {!popoutCondition && <Toolbar />}
         <ErrorBoundary fallbackRender={ErrorBoundaryFallback}>
           <SettingsModal />
+          {renderUI && <Navbar className="no-drag" />}
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route
+              path="/"
+              element={
+                <AlertProvider>
+                  <Dashboard />
+                </AlertProvider>
+              }
+            />
             <Route path="/video" element={<Video />} />
             <Route path="/missions" element={<Missions />} />
             <Route path="/graphs" element={<Graphs />} />
@@ -46,15 +67,7 @@ export default function AppContent() {
             <Route path="/config" element={<Config />} />
             <Route path="/webcam" element={<CameraWindow />} />
             <Route path="/rtsp" element={<RtspCanvasPage />} />
-            <Route
-              path="/fla"
-              element={
-                <Provider store={store}>
-                  <FLA />
-                </Provider>
-              }
-            />
-            <Route path="/missions" element={<Missions />} />
+            <Route path="/fla" element={<FLA />} />
           </Routes>
           {!popoutCondition && <Commands />}
         </ErrorBoundary>

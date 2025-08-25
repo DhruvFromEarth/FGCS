@@ -2,23 +2,39 @@
   This component displays the row for a mission item in a table.
 */
 
-import { NumberInput, Select, TableTd, TableTr } from "@mantine/core"
+import {
+  ActionIcon,
+  NumberInput,
+  Select,
+  TableTd,
+  TableTr,
+} from "@mantine/core"
+import { IconArrowDown, IconArrowUp, IconTrash } from "@tabler/icons-react"
 import { useEffect, useState } from "react"
-import { coordToInt, intToCoord } from "../../helpers/dataFormatters"
+import {
+  coordToInt,
+  getPositionFrameName,
+  intToCoord,
+} from "../../helpers/dataFormatters"
 import {
   COPTER_MISSION_ITEM_COMMANDS_LIST,
-  MAV_FRAME_LIST,
   PLANE_MISSION_ITEM_COMMANDS_LIST,
 } from "../../helpers/mavlinkConstants"
+
+// Redux
+import { useSelector } from "react-redux"
+import { selectAircraftType } from "../../redux/slices/droneInfoSlice"
 
 const coordsFractionDigits = 9
 
 export default function MissionItemsTableRow({
-  index,
-  aircraftType,
   missionItem,
   updateMissionItem,
+  deleteMissionItem,
+  updateMissionItemOrder,
 }) {
+  const aircraftType = useSelector(selectAircraftType)
+
   const [missionItemData, setMissionItemData] = useState(missionItem)
 
   useEffect(() => {
@@ -26,7 +42,9 @@ export default function MissionItemsTableRow({
   }, [missionItem])
 
   useEffect(() => {
-    updateMissionItem(missionItemData)
+    if (JSON.stringify(missionItem) !== JSON.stringify(missionItemData)) {
+      updateMissionItem(missionItemData)
+    }
   }, [missionItemData])
 
   function getDisplayCommandName(commandName) {
@@ -51,16 +69,6 @@ export default function MissionItemsTableRow({
     }))
   }
 
-  function getFrameName(frameId) {
-    var frameName = MAV_FRAME_LIST[frameId]
-
-    if (frameName.startsWith("MAV_FRAME_")) {
-      frameName = frameName.replace("MAV_FRAME_", "")
-    }
-
-    return frameName || "UNKNOWN"
-  }
-
   function updateMissionItemData(key, newVal) {
     setMissionItemData({
       ...missionItemData,
@@ -70,7 +78,7 @@ export default function MissionItemsTableRow({
 
   return (
     <TableTr>
-      <TableTd>{index}</TableTd>
+      <TableTd>{missionItemData.seq}</TableTd>
       <TableTd>
         <Select
           data={getAvailableCommands()}
@@ -130,7 +138,25 @@ export default function MissionItemsTableRow({
           hideControls
         />
       </TableTd>
-      <TableTd>{getFrameName(missionItemData.frame)}</TableTd>
+      <TableTd>{getPositionFrameName(missionItemData.frame)}</TableTd>
+      <TableTd className="flex flex-row gap-2">
+        <ActionIcon
+          onClick={() => updateMissionItemOrder(missionItemData.id, -1)}
+        >
+          <IconArrowUp size={20} />
+        </ActionIcon>
+        <ActionIcon
+          onClick={() => updateMissionItemOrder(missionItemData.id, 1)}
+        >
+          <IconArrowDown size={20} />
+        </ActionIcon>
+        <ActionIcon
+          onClick={() => deleteMissionItem(missionItemData.id)}
+          color="red"
+        >
+          <IconTrash size={20} />
+        </ActionIcon>
+      </TableTd>
     </TableTr>
   )
 }

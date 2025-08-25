@@ -6,7 +6,7 @@ import packageInfo from '../package.json'
 import { screen } from 'electron'; // for popout window
 
 // @ts-expect-error - no types available
-import openFile, { getRecentFiles, clearRecentFiles } from './fla'
+import openFile, { clearRecentFiles, getRecentFiles } from './fla'
 // The built directory structure
 //
 // ├─┬─┬ dist
@@ -24,6 +24,14 @@ process.env.VITE_PUBLIC = app.isPackaged
 // Fix UI Scaling
 app.commandLine.appendSwitch('high-dpi-support', '1')
 app.commandLine.appendSwitch('force-device-scale-factor', '1')
+
+// Fix linux WebGL error (icl chatgpt made this)
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('use-gl', 'desktop'); // force mesa
+  app.commandLine.appendSwitch('ignore-gpu-blacklist'); // allow iris, etc.
+  app.commandLine.appendSwitch('enable-webgl');
+  app.commandLine.appendSwitch('enable-webgl2-compute-context');
+}
 
 let win: BrowserWindow | null
 let loadingWin: BrowserWindow | null
@@ -509,6 +517,16 @@ app.whenReady().then(() => {
   })
   // Clear recent logs
   ipcMain.handle('fla:clear-recent-logs', clearRecentFiles)
+
+  // Save mission file
+  ipcMain.handle('missions:get-save-mission-file-path', async (event, options) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (!window) {
+      throw new Error('No active window found')
+    }
+    const result = await dialog.showSaveDialog(window, options);
+    return result;
+  })
 
   ipcMain.handle('app:get-node-env', () =>
     app.isPackaged ? 'production' : 'development',

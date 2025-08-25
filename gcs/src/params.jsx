@@ -13,7 +13,6 @@ import {
   useDebouncedValue,
   useDisclosure,
   useListState,
-  useSessionStorage,
   useToggle,
 } from "@mantine/hooks"
 import AutoSizer from "react-virtualized-auto-sizer"
@@ -31,11 +30,12 @@ import {
 } from "./helpers/notification.js"
 import { socket } from "./helpers/socket.js"
 
+// Redux
+import { useSelector } from "react-redux"
+import { selectConnectedToDrone } from "./redux/slices/droneConnectionSlice.js"
+
 export default function Params() {
-  const [connected] = useSessionStorage({
-    key: "connectedToDrone",
-    defaultValue: true,
-  })
+  const connected = useSelector(selectConnectedToDrone)
 
   // Parameter states
   const [params, paramsHandler] = useListState([])
@@ -151,7 +151,6 @@ export default function Params() {
 
     // Fetch params on connection to drone
     if (connected && Object.keys(params).length === 0 && !fetchingVars) {
-      socket.emit("set_state", { state: "params" })
       setFetchingVars(true)
     }
 

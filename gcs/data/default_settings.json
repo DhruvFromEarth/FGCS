@@ -35,6 +35,28 @@
       "display": "Sync Dashboard and Missions Map Viewstate"
     }
   },
+  "Dashboard": {
+    "maxAltitudeAlert": {
+      "description": "You'll be notified when the relative altitude of a drone exceeds this value.",
+      "default": 120,
+      "type": "number",
+      "range": [
+          0,
+          100000
+      ],
+      "display": "Maximum Altitude Alert"
+    },
+    "minAltitudeAlerts": {
+      "description": "You'll be notified when the relative altitude of a drone goes below these values.",
+      "default": [],
+      "type": "extendableNumber",
+      "range": [
+          0,
+          100000
+      ],
+      "display": "Minimum Altitude Alerts"
+    }
+  },
   "Params": {},
   "Config": {},
   "FGCS": {}

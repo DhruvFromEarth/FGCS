@@ -2,16 +2,26 @@
   This component displays the row for a rally item in a table.
 */
 
-import { NumberInput, Select, TableTd, TableTr } from "@mantine/core"
+import {
+  ActionIcon,
+  NumberInput,
+  Select,
+  TableTd,
+  TableTr,
+} from "@mantine/core"
+import { IconTrash } from "@tabler/icons-react"
 import { useEffect, useState } from "react"
-import { coordToInt, intToCoord } from "../../helpers/dataFormatters"
-import { MAV_FRAME_LIST } from "../../helpers/mavlinkConstants"
+import {
+  coordToInt,
+  getPositionFrameName,
+  intToCoord,
+} from "../../helpers/dataFormatters"
 const coordsFractionDigits = 9
 
 export default function RallyItemsTableRow({
-  index,
   rallyItem,
   updateRallyItem,
+  deleteRallyItem,
 }) {
   const [rallyItemData, setRallyItemData] = useState(rallyItem)
 
@@ -20,18 +30,10 @@ export default function RallyItemsTableRow({
   }, [rallyItem])
 
   useEffect(() => {
-    updateRallyItem(rallyItemData)
-  }, [rallyItemData])
-
-  function getFrameName(frameId) {
-    var frameName = MAV_FRAME_LIST[frameId]
-
-    if (frameName.startsWith("MAV_FRAME_")) {
-      frameName = frameName.replace("MAV_FRAME_", "")
+    if (JSON.stringify(rallyItem) !== JSON.stringify(rallyItemData)) {
+      updateRallyItem(rallyItemData)
     }
-
-    return frameName || "UNKNOWN"
-  }
+  }, [rallyItemData])
 
   function updateRallyItemData(key, newVal) {
     setRallyItemData({
@@ -42,7 +44,7 @@ export default function RallyItemsTableRow({
 
   return (
     <TableTr>
-      <TableTd>{index}</TableTd>
+      <TableTd>{rallyItemData.seq}</TableTd>
       <TableTd>
         <Select
           data={[{ value: "5100", label: "RALLY_POINT" }]}
@@ -84,7 +86,15 @@ export default function RallyItemsTableRow({
           hideControls
         />
       </TableTd>
-      <TableTd>{getFrameName(rallyItemData.frame)}</TableTd>
+      <TableTd>{getPositionFrameName(rallyItemData.frame)}</TableTd>
+      <TableTd>
+        <ActionIcon
+          onClick={() => deleteRallyItem(rallyItemData.id)}
+          color="red"
+        >
+          <IconTrash size={20} />
+        </ActionIcon>
+      </TableTd>
     </TableTr>
   )
 }

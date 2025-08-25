@@ -3,33 +3,38 @@
 */
 import { Table } from "@mantine/core"
 import React from "react"
+import { useSelector } from "react-redux"
+import { selectDrawingRallyItems } from "../../redux/slices/missionSlice"
 import RallyItemsTableRow from "./rallyItemsTableRow"
 
-function RallyItemsTableNonMemo({ rallyItems, updateRallyItem }) {
+function RallyItemsTableNonMemo({ updateRallyItem, deleteRallyItem }) {
+  const rallyItems = useSelector(selectDrawingRallyItems)
+
   return (
-    <Table striped withTableBorder withColumnBorders>
+    <Table striped withTableBorder withColumnBorders stickyHeader>
       <Table.Thead>
         <Table.Tr>
           <Table.Th></Table.Th>
           <Table.Th>Command</Table.Th>
-          <Table.Th>Param 1</Table.Th>
-          <Table.Th>Param 2</Table.Th>
-          <Table.Th>Param 3</Table.Th>
-          <Table.Th>Param 4</Table.Th>
+          <Table.Th></Table.Th>
+          <Table.Th></Table.Th>
+          <Table.Th></Table.Th>
+          <Table.Th></Table.Th>
           <Table.Th>Lat</Table.Th>
-          <Table.Th>Long</Table.Th>
+          <Table.Th>Lng</Table.Th>
           <Table.Th>Alt</Table.Th>
           <Table.Th>Frame</Table.Th>
+          <Table.Th></Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {rallyItems.map((rallyItem, idx) => {
+        {rallyItems.map((rallyItem) => {
           return (
             <RallyItemsTableRow
               key={rallyItem.id}
-              index={idx}
               rallyItem={rallyItem}
               updateRallyItem={updateRallyItem}
+              deleteRallyItem={deleteRallyItem}
             />
           )
         })}
