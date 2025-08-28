@@ -28,12 +28,14 @@ import MissionItemsTable from "./components/missions/missionItemsTable"
 import MissionStatistics from "./components/missions/missionStatistics"
 import MissionsMapSection from "./components/missions/missionsMap"
 import RallyItemsTable from "./components/missions/rallyItemsTable"
-import NoDroneConnected from "./components/noDroneConnected"
+// import NoDroneConnected from "./components/noDroneConnected"
+// import Sidebar from "./components/missions/sideBar"
 import { coordToInt, intToCoord } from "./helpers/dataFormatters"
 import { isGlobalFrameHomeCommand } from "./helpers/filterMissions"
 import { MAV_FRAME_LIST } from "./helpers/mavlinkConstants"
 
 // Redux
+import { store } from "./redux/store"
 import { useDispatch, useSelector } from "react-redux"
 import {
   emitGetHomePosition,
@@ -56,6 +58,8 @@ import {
   emitImportMissionFromFile,
   emitWriteCurrentMission,
   selectActiveTab,
+  selectLockedMapInteractions,
+  toggleMapLock,
   selectDrawingFenceItems,
   selectDrawingMissionItems,
   selectDrawingRallyItems,
@@ -104,6 +108,7 @@ export default function Missions() {
   const targetInfo = useSelector(selectTargetInfo)
   const homePosition = useSelector(selectHomePosition)
   const activeTab = useSelector(selectActiveTab)
+  const lockedMapInteractions = useSelector(selectLockedMapInteractions)
 
   // Mission items
   const missionItems = useSelector(selectDrawingMissionItems)
@@ -149,6 +154,20 @@ export default function Missions() {
   useEffect(() => {
     activeTabRef.current = activeTab
   }, [activeTab])
+
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close menu if clicked outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   function resetMissionProgressModalData() {
     dispatch(
@@ -211,6 +230,52 @@ export default function Missions() {
         [activeTabRef.current]: true,
       }),
     )
+  }
+
+  function sendTakeoffCommand(altitude = 10) {
+    // if (!targetInfo?.target_system || !targetInfo?.target_component) {
+    //   console.error("Missing target info for takeoff.");
+    //   return;
+    // }
+
+    const takeoffCommand = {
+      command: 22, // MAV_CMD_NAV_TAKEOFF
+      confirmation: 0,
+      param1: 0,      // Minimum pitch (leave as 0)
+      param2: 0,      // Empty
+      param3: 0,      // Empty
+      param4: 0,      // Yaw angle (0 = use current)
+      param5: 0,      // Latitude  (0 = use current)
+      param6: 0,      // Longitude (0 = use current)
+      param7: altitude, // Altitude (relative or global depending on frame)
+      target_system: targetInfo.target_system,
+      target_component: targetInfo.target_component,
+      mavpackettype: "COMMAND_LONG",
+    };
+
+    console.log("Sending Takeoff Command:", takeoffCommand);
+    dispatch(sendMavlinkCommand(takeoffCommand));
+  }
+
+  function addReturnToLaunch() {
+    const rtlCommand = {
+      command: 20, // MAV_CMD_NAV_RETURN_TO_LAUNCH
+      confirmation: 0,
+      param1: 0,
+      param2: 0,
+      param3: 0,
+      param4: 0,
+      target_component: targetInfo.target_component ?? 0,
+      target_system: targetInfo.target_system ?? 0,
+      mavpackettype: "COMMAND_LONG",
+    };
+
+    console.log("Sending RTL command:", rtlCommand);
+    dispatch(appendDrawingMissionItem(rtlCommand));
+    dispatch(setUnwrittenChanges({
+      ...unwrittenChanges,
+      mission: true,
+    }));
   }
 
   function createHomePositionItem() {
@@ -541,9 +606,9 @@ export default function Missions() {
         opened={missionProgressModalOpened}
         onClose={() => dispatch(setMissionProgressModal(false))}
         title={missionProgressModalTitle}
-        closeOnClickOutside={false}
+        closeOnClickOutside={true}
         closeOnEscape={false}
-        withCloseButton={false}
+        withCloseButton={true}
         centered
         overlayProps={{
           backgroundOpacity: 0.55,
@@ -588,183 +653,244 @@ export default function Missions() {
         </div>
       )}
 
-      {connected ? (
-        <div className="flex flex-col h-screen overflow-hidden">
-          <div className="flex flex-1 overflow-hidden">
-            {/* Resizable Sidebar */}
+      {/* banner - not connected to drone */}
+      {!connected && (
+        <div className="bg-white flex flex-row items-center justify-between w-full">
+          <b className="text-falconred-700 text-center flex-1">
+            You are not connected to the drone.
+          </b>
+        </div>
+      )}
+
+      {/* {connected ? ( */}
+      <div className="flex flex-col h-screen overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
+          {/* Resizable Sidebar */}
+          <ResizableBox
+            width={200}
+            height={Infinity}
+            minConstraints={[200, Infinity]}
+            maxConstraints={[600, Infinity]}
+            resizeHandles={["e"]}
+            axis="x"
+            handle={
+              <div className="w-2 h-full bg-falcongrey-900 hover:bg-falconred-500 cursor-col-resize absolute right-0 top-0 z-10"></div>
+            }
+            className="relative bg-falcongrey-800 overflow-y-auto"
+          >
+            <div className="flex flex-col gap-8 p-4">
+              <div className="flex flex-col gap-4">
+                <UnwrittenChangesWarning
+                  unwrittenChanges={unwrittenChanges}
+                />
+
+                <Button
+                  onClick={() => {
+                    readMissionFromDrone()
+                  }}
+                  disabled={!connected}
+                  className="grow"
+                >
+                  Read {activeTab}
+                </Button>
+                <Button
+                  onClick={() => {
+                    writeMissionToDrone()
+                  }}
+                  disabled={!connected}
+                  className="grow"
+                >
+                  Write {activeTab}
+                </Button>
+
+                {/* custom buttons */}
+                <div>
+                  {/* file */}
+                  <Button onClick={() => { }}>
+                    File
+                  </Button>
+                  {/* takeoff */}
+                  <Button onClick={() => sendTakeoffCommand(15)}>
+                    Takeoff to 15m
+                  </Button>
+                  {/* toggle */}
+                  <Button onClick={() => dispatch(toggleMapLock())}>
+                    Map: {lockedMapInteractions ? 'Locked' : 'Unlocked'}
+                  </Button>
+                  {/* return to launch */}
+                  <Button onClick={addReturnToLaunch} disabled={true}>
+                    Return to Launch
+                  </Button>
+                  {/* clear mission */}
+                  <Button onClick={clearMissionItems}>
+                    Clear Mission
+                  </Button>
+
+                  <select>
+                    <option disabled selected>Settings</option>
+                    <option value="option1">Option 1</option>
+                    <option value="option2">Option 2</option>
+                    <option value="option3">Option 3</option>
+                  </select>
+
+                  {/* settings dropdown/menu */}
+                  <div className="relative inline-block" ref={dropdownRef}>
+                    <button
+                      onClick={() => setOpen(!open)}
+                      className="px-3 py-2 bg-falcongrey-700 rounded-md text-white"
+                    >
+                      Settings
+                    </button>
+
+                    {open && (
+                      <div className="absolute left-0 mt-2 w-40 bg-falcongrey-700 rounded-md shadow-lg z-50 p-1">
+                        <button
+                          className="w-full text-left px-4 py-2 hover:bg-falcongrey-600 rounded"
+                          onClick={() => {
+                            console.log("Option 1 clicked");
+                            setOpen(false);
+                          }}
+                        >
+                          Option 1
+                        </button>
+                        <button
+                          className="w-full text-left px-4 py-2 hover:bg-falcongrey-600 rounded"
+                          onClick={() => {
+                            console.log("Option 2 clicked");
+                            setOpen(false);
+                          }}
+                        >
+                          Option 2
+                        </button>
+                        <button
+                          className="w-full text-left px-4 py-2 hover:bg-falcongrey-600 rounded"
+                          onClick={() => {
+                            console.log("Option 3 clicked");
+                            setOpen(false);
+                          }}
+                        >
+                          Option 3
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+              <Divider className="my-1" />
+
+              <div className="flex flex-col gap-2">
+                <p className="font-bold">
+                  Home location{" "}
+                  <span>
+                    <Tooltip
+                      className="inline"
+                      label="The home location is written to a mission save file."
+                    >
+                      <IconInfoCircle size={20} />
+                    </Tooltip>
+                  </span>
+                </p>
+                <p>
+                  Lat:{" "}
+                  {intToCoord(homePosition?.lat).toFixed(
+                    coordsFractionDigits,
+                  )}
+                </p>
+                <p>
+                  Lon:{" "}
+                  {intToCoord(homePosition?.lon).toFixed(
+                    coordsFractionDigits,
+                  )}
+                </p>
+              </div>
+
+              <Divider className="my-1" />
+
+              <div className="flex flex-col gap-2">
+                <MissionStatistics />
+              </div>
+            </div>
+          </ResizableBox>
+
+          {/* Main content area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Map area */}
+            <div className="flex-1 relative">
+              <MissionsMapSection
+                passedRef={mapRef}
+                missionItems={missionItems}
+                fenceItems={fenceItems}
+                rallyItems={rallyItems}
+                markerDragEndCallback={updateMissionItem}
+                addNewMissionItem={addNewMissionItem}
+                updateMissionHomePosition={updateMissionHomePosition}
+                clearMissionItems={clearMissionItems}
+                addFencePolygon={addFencePolygon}
+              />
+            </div>
+
+            {/* Resizable Bottom Bar */}
             <ResizableBox
-              width={200}
-              height={Infinity}
-              minConstraints={[200, Infinity]}
-              maxConstraints={[600, Infinity]}
-              resizeHandles={["e"]}
-              axis="x"
+              width={Infinity}
+              height={300}
+              minConstraints={[Infinity, 100]}
+              maxConstraints={[Infinity, 400]}
+              resizeHandles={["n"]}
+              axis="y"
               handle={
-                <div className="w-2 h-full bg-falcongrey-900 hover:bg-falconred-500 cursor-col-resize absolute right-0 top-0 z-10"></div>
+                <div className="w-full h-2 bg-falcongrey-900 hover:bg-falconred-500 cursor-row-resize absolute top-0 left-0 z-10"></div>
               }
               className="relative bg-falcongrey-800 overflow-y-auto"
             >
-              <div className="flex flex-col gap-8 p-4">
-                <div className="flex flex-col gap-4">
-                  <UnwrittenChangesWarning
-                    unwrittenChanges={unwrittenChanges}
-                  />
-
-                  <Button
-                    onClick={() => {
-                      readMissionFromDrone()
-                    }}
-                    disabled={!connected}
-                    className="grow"
-                  >
-                    Read {activeTab}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      writeMissionToDrone()
-                    }}
-                    disabled={!connected}
-                    className="grow"
-                  >
-                    Write {activeTab}
-                  </Button>
-                </div>
-
-                <Divider className="my-1" />
-
-                <div className="flex flex-col gap-4">
-                  <FileButton
-                    resetRef={importFileResetRef}
-                    onChange={setImportFile}
-                    accept=".waypoints,.txt"
-                    className="grow"
-                  >
-                    {(props) => <Button {...props}>Import from file</Button>}
-                  </FileButton>
-                  <Button
-                    onClick={() => {
-                      saveMissionToFile()
-                    }}
-                    className="grow"
-                  >
-                    Save to file
-                  </Button>
-                </div>
-
-                <Divider className="my-1" />
-
-                <div className="flex flex-col gap-2">
-                  <p className="font-bold">
-                    Home location{" "}
-                    <span>
-                      <Tooltip
-                        className="inline"
-                        label="The home location is written to a mission save file."
-                      >
-                        <IconInfoCircle size={20} />
-                      </Tooltip>
-                    </span>
-                  </p>
-                  <p>
-                    Lat:{" "}
-                    {intToCoord(homePosition?.lat).toFixed(
-                      coordsFractionDigits,
-                    )}
-                  </p>
-                  <p>
-                    Lon:{" "}
-                    {intToCoord(homePosition?.lon).toFixed(
-                      coordsFractionDigits,
-                    )}
-                  </p>
-                </div>
-
-                <Divider className="my-1" />
-
-                <div className="flex flex-col gap-2">
-                  <MissionStatistics />
-                </div>
-              </div>
-            </ResizableBox>
-
-            {/* Main content area */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Map area */}
-              <div className="flex-1 relative">
-                <MissionsMapSection
-                  passedRef={mapRef}
-                  missionItems={missionItems}
-                  fenceItems={fenceItems}
-                  rallyItems={rallyItems}
-                  markerDragEndCallback={updateMissionItem}
-                  addNewMissionItem={addNewMissionItem}
-                  updateMissionHomePosition={updateMissionHomePosition}
-                  clearMissionItems={clearMissionItems}
-                  addFencePolygon={addFencePolygon}
-                />
-              </div>
-
-              {/* Resizable Bottom Bar */}
-              <ResizableBox
-                width={Infinity}
-                height={300}
-                minConstraints={[Infinity, 100]}
-                maxConstraints={[Infinity, 400]}
-                resizeHandles={["n"]}
-                axis="y"
-                handle={
-                  <div className="w-full h-2 bg-falcongrey-900 hover:bg-falconred-500 cursor-row-resize absolute top-0 left-0 z-10"></div>
-                }
-                className="relative bg-falcongrey-800 overflow-y-auto"
+              <Tabs
+                value={activeTab}
+                onChange={(value) => dispatch(setActiveTab(value))}
+                className="mt-2"
               >
-                <Tabs
-                  value={activeTab}
-                  onChange={(value) => dispatch(setActiveTab(value))}
-                  className="mt-2"
-                >
-                  <Tabs.List grow>
-                    <Tabs.Tab
-                      value="mission"
-                      color={tailwindColors.yellow[400]}
-                    >
-                      Mission
-                    </Tabs.Tab>
-                    <Tabs.Tab value="fence" color={tailwindColors.blue[400]}>
-                      Fence
-                    </Tabs.Tab>
-                    <Tabs.Tab value="rally" color={tailwindColors.purple[400]}>
-                      Rally
-                    </Tabs.Tab>
-                  </Tabs.List>
+                <Tabs.List grow>
+                  <Tabs.Tab
+                    value="mission"
+                    color={tailwindColors.yellow[400]}
+                  >
+                    Mission
+                  </Tabs.Tab>
+                  <Tabs.Tab value="fence" color={tailwindColors.blue[400]}>
+                    Fence
+                  </Tabs.Tab>
+                  <Tabs.Tab value="rally" color={tailwindColors.purple[400]}>
+                    Rally
+                  </Tabs.Tab>
+                </Tabs.List>
 
-                  <Tabs.Panel value="mission">
-                    <MissionItemsTable
-                      updateMissionItem={updateMissionItem}
-                      deleteMissionItem={deleteMissionItem}
-                      updateMissionItemOrder={updateMissionItemOrder}
-                    />
-                  </Tabs.Panel>
-                  <Tabs.Panel value="fence">
-                    <FenceItemsTable
-                      updateMissionItem={updateMissionItem}
-                      deleteMissionItem={deleteMissionItem}
-                      updateMissionItemOrder={updateMissionItemOrder}
-                    />
-                  </Tabs.Panel>
-                  <Tabs.Panel value="rally">
-                    <RallyItemsTable
-                      updateRallyItem={updateMissionItem}
-                      deleteRallyItem={deleteMissionItem}
-                    />
-                  </Tabs.Panel>
-                </Tabs>
-              </ResizableBox>
-            </div>
+                <Tabs.Panel value="mission">
+                  <MissionItemsTable
+                    updateMissionItem={updateMissionItem}
+                    deleteMissionItem={deleteMissionItem}
+                    updateMissionItemOrder={updateMissionItemOrder}
+                  />
+                </Tabs.Panel>
+                <Tabs.Panel value="fence">
+                  <FenceItemsTable
+                    updateMissionItem={updateMissionItem}
+                    deleteMissionItem={deleteMissionItem}
+                    updateMissionItemOrder={updateMissionItemOrder}
+                  />
+                </Tabs.Panel>
+                <Tabs.Panel value="rally">
+                  <RallyItemsTable
+                    updateRallyItem={updateMissionItem}
+                    deleteRallyItem={deleteMissionItem}
+                  />
+                </Tabs.Panel>
+              </Tabs>
+            </ResizableBox>
           </div>
         </div>
-      ) : (
+      </div>
+      {/* ) : (
         <NoDroneConnected />
-      )}
+      )} */}
     </Layout>
   )
 }

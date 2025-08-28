@@ -54,6 +54,7 @@ import {
 import {
   selectActiveTab,
   selectHomePosition,
+  selectLockedMapInteractions,
 } from "../../redux/slices/missionSlice"
 
 const tailwindColors = resolveConfig(tailwindConfig).theme.colors
@@ -81,6 +82,7 @@ function MapSectionNonMemo({
   const homePosition = useSelector(selectHomePosition)
   const flightMode = useSelector(selectFlightModeString)
   const currentTab = useSelector(selectActiveTab)
+  const lockedMapInteractions = useSelector(selectLockedMapInteractions)
 
   const [guidedModePinData] = useSessionStorage({
     key: "guidedModePinData",
@@ -117,6 +119,7 @@ function MapSectionNonMemo({
 
   const clipboard = useClipboard({ timeout: 500 })
 
+  // const [missionDrawMode, setMissionDrawMode] = useState(false)
   const [polygonDrawMode, setPolygonDrawMode] = useState(false)
   const [polygonPoints, setPolygonPoints] = useState([])
 
@@ -317,7 +320,7 @@ function MapSectionNonMemo({
 
           if (polygonDrawMode) {
             addNewPolygonVertex(lat, lon)
-          } else {
+          } else if (!lockedMapInteractions) {
             addNewMissionItem(lat, lon)
           }
         }}

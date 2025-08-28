@@ -45,6 +45,7 @@ const missionInfoSlice = createSlice({
       target_system: 255,
     },
     activeTab: "mission",
+    lockedMapInteractions: false,
   },
   reducers: {
     setCurrentMission: (state, action) => {
@@ -215,6 +216,9 @@ const missionInfoSlice = createSlice({
         items: action.payload.items,
       })
     },
+    toggleMapLock: (state) => {
+      state.lockedMapInteractions = !state.lockedMapInteractions;
+    },
   },
   selectors: {
     selectCurrentMission: (state) => state.currentMission,
@@ -228,6 +232,7 @@ const missionInfoSlice = createSlice({
     selectMissionProgressModal: (state) => state.modals.missionProgressModal,
     selectMissionProgressData: (state) => state.missionProgressData,
     selectActiveTab: (state) => state.activeTab,
+    selectLockedMapInteractions: (state) => state.lockedMapInteractions,
   },
 })
 
@@ -263,6 +268,7 @@ export const {
   selectMissionProgressModal,
   selectMissionProgressData,
   selectActiveTab,
+  selectLockedMapInteractions,
 } = missionInfoSlice.selectors
 export const {
   setCurrentMission,
@@ -290,6 +296,7 @@ export const {
   emitWriteCurrentMission,
   emitImportMissionFromFile,
   emitExportMissionToFile,
+  toggleMapLock,
 } = missionInfoSlice.actions
 
 export default missionInfoSlice
