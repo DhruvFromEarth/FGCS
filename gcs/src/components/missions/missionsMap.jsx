@@ -72,13 +72,14 @@ function MapSectionNonMemo({
   updateMissionHomePosition,
   clearMissionItems,
   addFencePolygon,
+  activeTab,
 }) {
   // Redux
   const connected = useSelector(selectConnectedToDrone)
   const gpsData = useSelector(selectGPS)
   const heading = gpsData.hdg ? gpsData.hdg / 100 : 0
   const navControllerOutputData = useSelector(selectNavController)
-  const desiredBearing = navControllerOutputData.nav_bearing
+  const desiredBearing = navControllerOutputData.navBearing
   const homePosition = useSelector(selectHomePosition)
   const flightMode = useSelector(selectFlightModeString)
   const currentTab = useSelector(selectActiveTab)
@@ -456,7 +457,7 @@ function MapSectionNonMemo({
               <p>Set home position</p>
             </ContextMenuItem>
             <ContextMenuItem onClick={clearMissionItems}>
-              <p>Clear mission</p>
+              <p>Clear {activeTab}</p>
             </ContextMenuItem>
             <Divider />
             <ContextMenuSubMenuItem title={"Polygon"}>

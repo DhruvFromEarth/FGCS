@@ -117,6 +117,8 @@ export default function Missions() {
   const unwrittenChanges = useSelector(selectUnwrittenChanges)
   const missionProgressModalOpened = useSelector(selectMissionProgressModal)
   const missionProgressModalData = useSelector(selectMissionProgressData)
+  const [takeoffAdded, setTakeoffAdded] = useState(false);
+  const [rtlAdded, setRtlAdded] = useState(false);
 
   // Other states
   const [showWarningBanner, setShowWarningBanner] = useSessionStorage({
@@ -169,6 +171,34 @@ export default function Missions() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Update missionItems when home position changes - is used to move TAKEOFF and RTL points with home position.
+  useEffect(() => {
+    if (!homePosition || !Array.isArray(missionItems)) return;
+
+    let shouldUpdate = false;
+
+    const updatedItems = missionItems.map((item) => {
+      if (item.command === 22 || item.command === 20) {
+        const newX = homePosition.lat;
+        const newY = homePosition.lon;
+
+        if (item.x !== newX || item.y !== newY) {
+          shouldUpdate = true;
+          return { ...item, x: newX, y: newY };
+        }
+      }
+      return item;
+    });
+
+    if (shouldUpdate) {
+      updatedItems.forEach((item) => {
+        if (item.command === 22 || item.command === 20) {
+          dispatch(updateDrawingMissionItem(item));
+        }
+      });
+    }
+  }, [homePosition, missionItems]);
+
   function resetMissionProgressModalData() {
     dispatch(
       setMissionProgressData({
@@ -178,8 +208,40 @@ export default function Missions() {
     )
   }
 
-  function addNewMissionItem(lat, lon) {
-    const newMissionItem = {
+  function addNewMissionItem(lat, lon, type = "waypoint") {
+    const isValidCoord = (val) =>
+      typeof val === "number" && !isNaN(val)
+
+    const isValidLatLon = (lat, lon) =>
+      typeof lat === "number" &&
+      typeof lon === "number" &&
+      isFinite(lat) &&
+      isFinite(lon) &&
+      lat >= -90 && lat <= 90 &&
+      lon >= -180 && lon <= 180;
+
+    let takeoffLat = intToCoord(homePosition.lat);
+    let takeoffLon = intToCoord(homePosition.lon);
+
+    if (isValidLatLon(targetInfo.lat, targetInfo.lon)) {
+      takeoffLat = targetInfo.lat;
+      takeoffLon = targetInfo.lon;
+    }
+
+    if (!isValidLatLon(takeoffLat, takeoffLon)) {
+      console.error("Invalid TAKEOFF lat/lon", takeoffLat, takeoffLon);
+      return;
+    }
+
+    if (
+      !Number.isFinite(homePosition?.lat) ||
+      !Number.isFinite(homePosition?.lon)
+    ) {
+      console.error("Invalid home position", homePosition);
+      return;
+    }
+
+    const newItem = {
       id: uuidv4(),
       seq: null,
       x: coordToInt(lat),
@@ -194,8 +256,7 @@ export default function Missions() {
               : "MAV_FRAME_GLOBAL_RELATIVE_ALT"),
         ),
       ),
-      command: null,
-      param1: activeTabRef.current === "fence" ? 5 : 0,
+      param1: 0,
       param2: 0,
       param3: 0,
       param4: 0,
@@ -203,80 +264,154 @@ export default function Missions() {
       autocontinue: 1,
       target_component: targetInfo.target_component,
       target_system: targetInfo.target_system,
-      mission_type: null,
+      mission_type: 0,
       mavpackettype: "MISSION_ITEM_INT",
     }
 
+    // checking for valid coordinates - also can be used for return_to_launch
     if (activeTabRef.current === "mission") {
-      newMissionItem.command = 16 // MAV_CMD_NAV_WAYPOINT
-      newMissionItem.mission_type = 0 // Mission type
+      const takeoffLat = isValidCoord(targetInfo.lat)
+        ? targetInfo.lat
+        : homePosition.lat
+      const takeoffLon = isValidCoord(targetInfo.lon)
+        ? targetInfo.lon
+        : homePosition.lon
 
-      dispatch(appendDrawingMissionItem(newMissionItem))
-    } else if (activeTabRef.current === "fence") {
-      newMissionItem.command = 5004 // MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION
-      newMissionItem.mission_type = 1 // Fence type
+      if (!isValidCoord(takeoffLat) || !isValidCoord(takeoffLon)) {
+        console.error(`Cannot add ${type} command: invalid lat/lon`)
+        return
+      }
 
-      dispatch(appendDrawingFenceItem(newMissionItem))
-    } else if (activeTabRef.current === "rally") {
-      newMissionItem.command = 5100 // MAV_CMD_NAV_RALLY_POINT
-      newMissionItem.mission_type = 2 // Rally type
-
-      dispatch(appendDrawingRallyItem(newMissionItem))
+      if (!takeoffAdded) {
+        newItem.command = 22 // MAV_CMD_NAV_TAKEOFF
+        newItem.x = (takeoffLat)
+        newItem.y = (takeoffLon)
+        newItem.z = newMissionItemAltitude
+        dispatch(appendDrawingMissionItem(newItem))
+        setTakeoffAdded(true)
+      } else if (type === "waypoint") {
+        newItem.command = 16 // MAV_CMD_NAV_WAYPOINT
+        dispatch(appendDrawingMissionItem(newItem))
+      } else if (type === "return_to_launch") {
+        newItem.command = 20 // MAV_CMD_NAV_RETURN_TO_LAUNCH
+        newItem.x = (homePosition.lat)
+        newItem.y = (homePosition.lon)
+        newItem.z = 0
+        dispatch(appendDrawingMissionItem(newItem))
+        setRtlAdded(true);
+        lockedMapInteractions ? null : dispatch(toggleMapLock());
+      }
+      dispatch(setUnwrittenChanges({ ...unwrittenChanges, mission: true }))
     }
-
-    dispatch(
-      setUnwrittenChanges({
-        ...unwrittenChanges,
-        [activeTabRef.current]: true,
-      }),
-    )
+    else if (activeTabRef.current === "fence") {
+      newItem.command = 5004
+      newItem.mission_type = 1
+      dispatch(appendDrawingFenceItem(newItem))
+      dispatch(setUnwrittenChanges({ ...unwrittenChanges, fence: true }))
+    } else if (activeTabRef.current === "rally") {
+      newItem.command = 5100
+      newItem.mission_type = 2
+      dispatch(appendDrawingRallyItem(newItem))
+      dispatch(setUnwrittenChanges({ ...unwrittenChanges, rally: true }))
+    }
   }
 
-  function sendTakeoffCommand(altitude = 10) {
-    // if (!targetInfo?.target_system || !targetInfo?.target_component) {
-    //   console.error("Missing target info for takeoff.");
-    //   return;
-    // }
+  // function sendTakeoffCommand(altitude) {
+  //   // // if (!targetInfo?.target_system || !targetInfo?.target_component) {
+  //   // //   console.error("Missing target info for takeoff.",altitude);
+  //   // //   dispatch(emitGetTargetInfo());
+  //   // //   return;
+  //   // // }
+  //   // if (
+  //   //   !Number.isFinite(homePosition?.lat) ||
+  //   //   !Number.isFinite(homePosition?.lon)
+  //   // ) {
+  //   //   console.error("Invalid home position", homePosition);
+  //   //   return;
+  //   // }
 
-    const takeoffCommand = {
-      command: 22, // MAV_CMD_NAV_TAKEOFF
-      confirmation: 0,
-      param1: 0,      // Minimum pitch (leave as 0)
-      param2: 0,      // Empty
-      param3: 0,      // Empty
-      param4: 0,      // Yaw angle (0 = use current)
-      param5: 0,      // Latitude  (0 = use current)
-      param6: 0,      // Longitude (0 = use current)
-      param7: altitude, // Altitude (relative or global depending on frame)
-      target_system: targetInfo.target_system,
-      target_component: targetInfo.target_component,
-      mavpackettype: "COMMAND_LONG",
-    };
+  //   // console.log('Sending takeoff with lat/lng:', homePosition.lat, homePosition.lon, typeof homePosition.lat, typeof homePosition.lon);
 
-    console.log("Sending Takeoff Command:", takeoffCommand);
-    dispatch(sendMavlinkCommand(takeoffCommand));
-  }
+  //   // const takeoffCommand = {
+  //   //   command: 22, // MAV_CMD_NAV_TAKEOFF
+  //   //   confirmation: 0,
+  //   //   param1: 0,      // Minimum pitch (leave as 0)
+  //   //   param2: 0,      // Empty
+  //   //   param3: 0,      // Empty
+  //   //   param4: 0,      // Yaw angle (0 = use current)
+  //   //   param5: homePosition.lat ?? 0,      // Latitude
+  //   //   param6: homePosition.lon ?? 0,      // Longitude
+  //   //   param7: altitude, // Altitude (relative or global depending on frame)
+  //   //   // target_system: targetInfo.target_system,
+  //   //   // target_component: targetInfo.target_component,
+  //   //   mavpackettype: "COMMAND_LONG",
+  //   // };
+  //   // dispatch(appendDrawingMissionItem(takeoffCommand));
 
-  function addReturnToLaunch() {
-    const rtlCommand = {
-      command: 20, // MAV_CMD_NAV_RETURN_TO_LAUNCH
-      confirmation: 0,
-      param1: 0,
-      param2: 0,
-      param3: 0,
-      param4: 0,
-      target_component: targetInfo.target_component ?? 0,
-      target_system: targetInfo.target_system ?? 0,
-      mavpackettype: "COMMAND_LONG",
-    };
+  //   const isValidCoord = (val) =>
+  //     typeof val === "number" && !isNaN(val)
 
-    console.log("Sending RTL command:", rtlCommand);
-    dispatch(appendDrawingMissionItem(rtlCommand));
-    dispatch(setUnwrittenChanges({
-      ...unwrittenChanges,
-      mission: true,
-    }));
-  }
+  //   if (!takeoffAdded) {
+  //     const takeoffLat = isValidCoord(targetInfo.lat)
+  //       ? targetInfo.lat
+  //       : homePosition.lat
+  //     const takeoffLon = isValidCoord(targetInfo.lon)
+  //       ? targetInfo.lon
+  //       : homePosition.lon
+
+  //     if (!isValidCoord(takeoffLat) || !isValidCoord(takeoffLon)) {
+  //       console.error("Cannot add TAKEOFF command: invalid lat/lon")
+  //       return
+  //     }
+
+  //     const takeoffCommand = {
+  //       command: 22, // MAV_CMD_NAV_TAKEOFF
+  //       x: coordToInt(takeoffLat), // param 5, 6, 7 isn't working here use x, y, z.
+  //       y: coordToInt(takeoffLon),
+  //       z: newMissionItemAltitude,
+  //       confirmation: 0,
+  //       param1: 0,      // Minimum pitch
+  //       param2: 0,      // Empty
+  //       param3: 0,      // Empty
+  //       param4: 0,      // Yaw angle
+  //       frame: parseInt(
+  //         Object.keys(MAV_FRAME_LIST).find(
+  //           (key) =>
+  //             MAV_FRAME_LIST[key] ===
+  //             (activeTabRef.current === "fence"
+  //               ? "MAV_FRAME_GLOBAL"
+  //               : "MAV_FRAME_GLOBAL_RELATIVE_ALT"),
+  //         ),
+  //       ),
+  //       mavpackettype: "COMMAND_LONG",
+  //     };
+  //     dispatch(appendDrawingMissionItem(takeoffCommand))
+  //     setTakeoffAdded(true)
+
+  //     console.log("Sending Takeoff Command:", takeoffCommand);
+  //   }
+  // }
+
+  // function addReturnToLaunch() {
+  //   const rtlCommand = {
+  //     command: 20, // MAV_CMD_NAV_RETURN_TO_LAUNCH
+  //     confirmation: 0,
+  //     param1: 0,
+  //     param2: 0,
+  //     param3: 0,
+  //     param4: 0,
+  //     target_component: targetInfo.target_component ?? 0,
+  //     target_system: targetInfo.target_system ?? 0,
+  //     mavpackettype: "COMMAND_LONG",
+  //   };
+
+  //   console.log("Sending RTL command:", rtlCommand);
+  //   dispatch(appendDrawingMissionItem(rtlCommand));
+  //   dispatch(setUnwrittenChanges({
+  //     ...unwrittenChanges,
+  //     mission: true,
+  //   }));
+  // }
 
   function createHomePositionItem() {
     if (!homePosition) {
@@ -404,13 +539,12 @@ export default function Missions() {
     setMissionProgressModalTitle(`Reading ${activeTabRef.current} from drone`)
     resetMissionProgressModalData()
     dispatch(setMissionProgressModal(true))
+    // condition - if takeoff or rtl points are present in mission read, handle buttons accordingly.
   }
 
   function writeMissionToDrone() {
     if (activeTabRef.current === "mission") {
-      dispatch(
-        emitWriteCurrentMission({ type: "mission", items: missionItems }),
-      )
+      dispatch(emitWriteCurrentMission({ type: "mission", items: missionItems }))
     } else if (activeTabRef.current === "fence") {
       dispatch(emitWriteCurrentMission({ type: "fence", items: fenceItems }))
     } else if (activeTabRef.current === "rally") {
@@ -493,46 +627,69 @@ export default function Missions() {
       lat: Number.isInteger(lat) ? lat : coordToInt(lat),
       lon: Number.isInteger(lon) ? lon : coordToInt(lon),
       alt: 0.1,
-    }
-    dispatch(setHomePosition(newHomePosition))
+    };
+
+    // Update Redux state for home position
+    dispatch(setHomePosition(newHomePosition));
+
+    // Update TAKEOFF and RETURN_TO_LAUNCH mission items if present
+    const updatedItems = missionItems.map((item) => {
+      if (item.command === 22 || item.command === 20) {
+        return {
+          ...item,
+          x: newHomePosition.lat,
+          y: newHomePosition.lon,
+        };
+      }
+      return item;
+    });
+
+    // Dispatch updates for modified items only
+    updatedItems.forEach((item, index) => {
+      if (
+        (item.command === 22 || item.command === 20) &&
+        (item.x !== missionItems[index]?.x || item.y !== missionItems[index]?.y)
+      ) {
+        dispatch(updateDrawingMissionItem(item));
+      }
+    });
 
     // Also update the first waypoint if it is a home position waypoint
-    if (missionItems.length > 0 && isGlobalFrameHomeCommand(missionItems[0])) {
-      // Check if the first item is a home position command
-      const updatedMissionItems = [...missionItems]
-      updatedMissionItems[0] = {
-        ...updatedMissionItems[0],
-        x: newHomePosition.lat,
-        y: newHomePosition.lon,
-      }
-      dispatch(setDrawingMissionItems(updatedMissionItems))
-    } else {
-      // If the first item is not a home position command, add a new home position item
-      const newHomeMissionItem = {
-        id: uuidv4(),
-        seq: 0,
-        x: newHomePosition.lat,
-        y: newHomePosition.lon,
-        z: 0.1,
-        frame: parseInt(
-          Object.keys(MAV_FRAME_LIST).find(
-            (key) => MAV_FRAME_LIST[key] === "MAV_FRAME_GLOBAL",
-          ),
-        ),
-        command: 16, // MAV_CMD_NAV_WAYPOINT
-        param1: 0,
-        param2: 0,
-        param3: 0,
-        param4: 0,
-        current: 0,
-        autocontinue: 1,
-        target_component: targetInfo.target_component,
-        target_system: targetInfo.target_system,
-        mission_type: 0,
-        mavpackettype: "MISSION_ITEM_INT",
-      }
-      dispatch(setDrawingMissionItems([newHomeMissionItem, ...missionItems]))
-    }
+    // if (missionItems.length > 0 && isGlobalFrameHomeCommand(missionItems[0])) {
+    // Check if the first item is a home position command
+    // const updatedMissionItems = [...missionItems]
+    // updatedMissionItems[0] = {
+    //   ...updatedMissionItems[0],
+    //   x: newHomePosition.lat,
+    //   y: newHomePosition.lon,
+    // }
+    // dispatch(setDrawingMissionItems(updatedMissionItems))
+    // } else {
+    // If the first item is not a home position command, add a new home position item
+    // const newHomeMissionItem = {
+    //   id: uuidv4(),
+    //   seq: 0,
+    //   x: newHomePosition.lat,
+    //   y: newHomePosition.lon,
+    //   z: 0.1,
+    //   frame: parseInt(
+    //     Object.keys(MAV_FRAME_LIST).find(
+    //       (key) => MAV_FRAME_LIST[key] === "MAV_FRAME_GLOBAL",
+    //     ),
+    //   ),
+    //   command: 16, // MAV_CMD_NAV_WAYPOINT
+    //   param1: 0,
+    //   param2: 0,
+    //   param3: 0,
+    //   param4: 0,
+    //   current: 0,
+    //   autocontinue: 1,
+    //   target_component: targetInfo.target_component,
+    //   target_system: targetInfo.target_system,
+    //   mission_type: 0,
+    //   mavpackettype: "MISSION_ITEM_INT",
+    // }
+    // dispatch(setDrawingMissionItems([newHomeMissionItem, ...missionItems]))
 
     dispatch(setUnwrittenChanges({ ...unwrittenChanges, mission: true }))
   }
@@ -540,6 +697,9 @@ export default function Missions() {
   function clearMissionItems() {
     if (activeTabRef.current === "mission") {
       // Clear all mission items except the first if the first is a home position
+      // dispatch(setDrawingMissionItems([]))
+      setTakeoffAdded(false)
+      setRtlAdded(false);
       if (
         missionItems.length > 0 &&
         isGlobalFrameHomeCommand(missionItems[0])
@@ -710,30 +870,40 @@ export default function Missions() {
                     File
                   </Button>
                   {/* takeoff */}
-                  <Button onClick={() => sendTakeoffCommand(15)}>
-                    Takeoff to 15m
+                  <Button
+                    onClick={() => addNewMissionItem(0, 0, "takeoff")}
+                    disabled={takeoffAdded}
+                  >
+                    Takeoff
                   </Button>
                   {/* toggle */}
-                  <Button onClick={() => dispatch(toggleMapLock())}>
-                    Map: {lockedMapInteractions ? 'Locked' : 'Unlocked'}
+                  <Button
+                    onClick={() => dispatch(toggleMapLock())}
+                    disabled={!takeoffAdded || rtlAdded}
+                  >
+                    {/* Map: {lockedMapInteractions ? 'Locked' : 'Unlocked'} */}
+                    add waypoint: {lockedMapInteractions ? 'Locked' : 'Unlocked'}
                   </Button>
                   {/* return to launch */}
-                  <Button onClick={addReturnToLaunch} disabled={true}>
+                  <Button
+                    onClick={() => addNewMissionItem(0, 0, "return_to_launch")}
+                    disabled={!takeoffAdded || rtlAdded}
+                  >
                     Return to Launch
                   </Button>
                   {/* clear mission */}
                   <Button onClick={clearMissionItems}>
-                    Clear Mission
+                    Clear {activeTab}
                   </Button>
 
-                  <select>
-                    <option disabled selected>Settings</option>
+                  {/* settings dropdown/menu */}
+                  <select defaultValue="">
+                    <option disabled value="">Settings</option>
                     <option value="option1">Option 1</option>
                     <option value="option2">Option 2</option>
                     <option value="option3">Option 3</option>
                   </select>
 
-                  {/* settings dropdown/menu */}
                   <div className="relative inline-block" ref={dropdownRef}>
                     <button
                       onClick={() => setOpen(!open)}
@@ -776,6 +946,26 @@ export default function Missions() {
                   </div>
                 </div>
 
+              </div>
+              <Divider className="my-1" />
+
+              <div className="flex flex-col gap-4">
+                <FileButton
+                  resetRef={importFileResetRef}
+                  onChange={setImportFile}
+                  accept=".waypoints,.txt"
+                  className="grow"
+                >
+                  {(props) => <Button {...props}>Import from file</Button>}
+                </FileButton>
+                <Button
+                  onClick={() => {
+                    saveMissionToFile()
+                  }}
+                  className="grow"
+                >
+                  Save to file
+                </Button>
               </div>
               <Divider className="my-1" />
 
@@ -827,6 +1017,7 @@ export default function Missions() {
                 updateMissionHomePosition={updateMissionHomePosition}
                 clearMissionItems={clearMissionItems}
                 addFencePolygon={addFencePolygon}
+                activeTab={activeTab}
               />
             </div>
 
