@@ -131,7 +131,7 @@ export default function MissionItems({
       <DrawLineCoordinates
         coordinates={listOfDottedLineCoords}
         colour={tailwindColors.yellow[400]}
-        lineProps={{ "line-dasharray": [2, 2] }}
+        lineProps={{ "line-dasharray": [4, 4] }}
       />
     </>
   )

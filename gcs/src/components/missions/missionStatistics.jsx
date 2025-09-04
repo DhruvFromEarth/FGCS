@@ -158,7 +158,7 @@ function calculateTotalDistance(missionItems) {
 }
 
 function StatisticItem({ label, value, units, tooltip = null }) {
-  const displayString = `${label}: ${value}${units || ""}`
+  const displayString = `${label}: ${value} ${units || ""}`
   return (
     <>
       {tooltip ? (
@@ -214,9 +214,12 @@ export default function MissionStatistics() {
         label="Max distance between waypoints"
         value={maxDistanceBetweenWaypoints.maxDistance}
         tooltip={
-          maxDistanceBetweenWaypoints.points &&
-          `Between ${maxDistanceBetweenWaypoints.points[0].seq} and ${maxDistanceBetweenWaypoints.points[1].seq}`
+          maxDistanceBetweenWaypoints.points?.[0]?.seq !== undefined &&
+            maxDistanceBetweenWaypoints.points?.[1]?.seq !== undefined
+            ? `Between ${maxDistanceBetweenWaypoints.points[0].seq} and ${maxDistanceBetweenWaypoints.points[1].seq}`
+            : "Between 0 and 0"
         }
+
         units="m"
       />
       <StatisticItem label="Max altitude" value={maxAltitude} units="m" />
@@ -224,9 +227,12 @@ export default function MissionStatistics() {
         label="Max slope gradient"
         value={maxSlopeGradient.maxGradient}
         tooltip={
-          maxSlopeGradient.points &&
-          `Between ${maxSlopeGradient.points[0]?.seq} and ${maxSlopeGradient.points[1]?.seq}`
+          maxSlopeGradient.points?.[0]?.seq !== undefined &&
+            maxSlopeGradient.points?.[1]?.seq !== undefined
+            ? `Between ${maxSlopeGradient.points[0].seq} and ${maxSlopeGradient.points[1].seq}`
+            : "Between 0 and 0"
         }
+
         units="%"
       />
     </>

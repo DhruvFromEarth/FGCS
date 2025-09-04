@@ -55,6 +55,7 @@ import {
   selectActiveTab,
   selectHomePosition,
   selectLockedMapInteractions,
+  setHomePosition,
 } from "../../redux/slices/missionSlice"
 
 const tailwindColors = resolveConfig(tailwindConfig).theme.colors
@@ -73,6 +74,8 @@ function MapSectionNonMemo({
   clearMissionItems,
   addFencePolygon,
   activeTab,
+  zoomTarget,
+  setZoomTarget,
 }) {
   // Redux
   const connected = useSelector(selectConnectedToDrone)
@@ -125,7 +128,7 @@ function MapSectionNonMemo({
   const [polygonPoints, setPolygonPoints] = useState([])
 
   useEffect(() => {
-    return () => {}
+    return () => { }
   }, [connected])
 
   useEffect(() => {
@@ -212,10 +215,10 @@ function MapSectionNonMemo({
       prevPoints.map((item) =>
         item.id === updatedPolygonVertex.id
           ? {
-              ...item,
-              lat: intToCoord(updatedPolygonVertex.x),
-              lon: intToCoord(updatedPolygonVertex.y),
-            }
+            ...item,
+            lat: intToCoord(updatedPolygonVertex.x),
+            lon: intToCoord(updatedPolygonVertex.y),
+          }
           : item,
       ),
     )
@@ -281,6 +284,25 @@ function MapSectionNonMemo({
       })
     }
   }
+
+  useEffect(() => {
+    if (!zoomTarget) return;
+
+    switch (zoomTarget) {
+      case 'Drone':
+        zoomToDrone();
+        break;
+      case 'Mission':
+        zoomToMission();
+        break;
+      case 'Home':
+        zoomToHome();
+        break;
+    }
+    setHomePosition(null);
+    // Optional: clear the target after handling it (to avoid re-triggering)
+    // You can lift `setZoomTarget` to this component too, or use a callback from parent
+  }, [zoomTarget]);
 
   return (
     <div className="w-initial h-full" id="map">
@@ -456,9 +478,9 @@ function MapSectionNonMemo({
             >
               <p>Set home position</p>
             </ContextMenuItem>
-            <ContextMenuItem onClick={clearMissionItems}>
+            {/* <ContextMenuItem onClick={clearMissionItems}>
               <p>Clear {activeTab}</p>
-            </ContextMenuItem>
+            </ContextMenuItem> */}
             <Divider />
             <ContextMenuSubMenuItem title={"Polygon"}>
               <ContextMenuItem

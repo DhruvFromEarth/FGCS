@@ -13,13 +13,9 @@ import { v4 as uuidv4 } from "uuid"
 // Custom component and helpers
 import {
   ActionIcon,
-  Button,
-  Divider,
-  FileButton,
   Modal,
   Progress,
   Tabs,
-  Tooltip,
 } from "@mantine/core"
 import { IconInfoCircle, IconX } from "@tabler/icons-react"
 import Layout from "./components/layout"
@@ -28,8 +24,7 @@ import MissionItemsTable from "./components/missions/missionItemsTable"
 import MissionStatistics from "./components/missions/missionStatistics"
 import MissionsMapSection from "./components/missions/missionsMap"
 import RallyItemsTable from "./components/missions/rallyItemsTable"
-// import NoDroneConnected from "./components/noDroneConnected"
-// import Sidebar from "./components/missions/sideBar"
+import Sidebar from "./components/missions/sideBar"
 import { coordToInt, intToCoord } from "./helpers/dataFormatters"
 import { isGlobalFrameHomeCommand } from "./helpers/filterMissions"
 import { MAV_FRAME_LIST } from "./helpers/mavlinkConstants"
@@ -117,14 +112,9 @@ export default function Missions() {
   const unwrittenChanges = useSelector(selectUnwrittenChanges)
   const missionProgressModalOpened = useSelector(selectMissionProgressModal)
   const missionProgressModalData = useSelector(selectMissionProgressData)
+
   const [takeoffAdded, setTakeoffAdded] = useState(false);
   const [rtlAdded, setRtlAdded] = useState(false);
-
-  // Other states
-  const [showWarningBanner, setShowWarningBanner] = useSessionStorage({
-    key: "showWarningBanner",
-    defaultValue: true,
-  })
 
   // Need to keep a reference to the active tab to avoid stale closures
   const activeTabRef = useRef(activeTab)
@@ -137,9 +127,17 @@ export default function Missions() {
   const [missionProgressModalTitle, setMissionProgressModalTitle] = useState(
     "Mission progress update",
   )
+
+  // Other states
+  const [showWarningBanner, setShowWarningBanner] = useSessionStorage({
+    key: "showWarningBanner",
+    defaultValue: true,
+  })
   const [currentPage] = useSessionStorage({ key: "currentPage" })
   const mapRef = useRef()
   const newMissionItemAltitude = 30 // TODO: Make this configurable
+  const [zoomTarget, setZoomTarget] = useState(null);
+  const [selectedOption, setSelectedOption] = useState('takeoff') // to check for which command to add marker.
 
   // Send some messages when file is loaded
   useEffect(() => {
@@ -199,6 +197,12 @@ export default function Missions() {
     }
   }, [homePosition, missionItems]);
 
+  // clearing previous zoom state for same zoom command again (as it uses useEffect).
+  const handleZoomTarget = (target) => {
+    setZoomTarget(null);
+    setTimeout(() => setZoomTarget(target), 0);
+  };
+
   function resetMissionProgressModalData() {
     dispatch(
       setMissionProgressData({
@@ -208,7 +212,7 @@ export default function Missions() {
     )
   }
 
-  function addNewMissionItem(lat, lon, type = "waypoint") {
+  function addNewMissionItem(lat, lon, type = selectedOption) {
     const isValidCoord = (val) =>
       typeof val === "number" && !isNaN(val)
 
@@ -282,17 +286,30 @@ export default function Missions() {
         return
       }
 
-      if (!takeoffAdded) {
+      if (!takeoffAdded && type === 'takeoff') {
         newItem.command = 22 // MAV_CMD_NAV_TAKEOFF
         newItem.x = (takeoffLat)
         newItem.y = (takeoffLon)
         newItem.z = newMissionItemAltitude
         dispatch(appendDrawingMissionItem(newItem))
         setTakeoffAdded(true)
-      } else if (type === "waypoint") {
+        setSelectedOption('waypoint')
+      }
+      else if (type === "waypoint") {
         newItem.command = 16 // MAV_CMD_NAV_WAYPOINT
         dispatch(appendDrawingMissionItem(newItem))
-      } else if (type === "return_to_launch") {
+      }
+      else if (type === "land") {
+        const lastItem = missionItems[missionItems.length - 1];
+        const lat = lastItem?.x ?? 0;
+        const lon = lastItem?.y ?? 0;
+        newItem.command = 21 // MAV_CMD_NAV_LAND
+        newItem.x = lat
+        newItem.y = lon
+        newItem.z = 0
+        dispatch(appendDrawingMissionItem(newItem))
+      }
+      else if (type === "return_to_launch") {
         newItem.command = 20 // MAV_CMD_NAV_RETURN_TO_LAUNCH
         newItem.x = (homePosition.lat)
         newItem.y = (homePosition.lon)
@@ -315,103 +332,6 @@ export default function Missions() {
       dispatch(setUnwrittenChanges({ ...unwrittenChanges, rally: true }))
     }
   }
-
-  // function sendTakeoffCommand(altitude) {
-  //   // // if (!targetInfo?.target_system || !targetInfo?.target_component) {
-  //   // //   console.error("Missing target info for takeoff.",altitude);
-  //   // //   dispatch(emitGetTargetInfo());
-  //   // //   return;
-  //   // // }
-  //   // if (
-  //   //   !Number.isFinite(homePosition?.lat) ||
-  //   //   !Number.isFinite(homePosition?.lon)
-  //   // ) {
-  //   //   console.error("Invalid home position", homePosition);
-  //   //   return;
-  //   // }
-
-  //   // console.log('Sending takeoff with lat/lng:', homePosition.lat, homePosition.lon, typeof homePosition.lat, typeof homePosition.lon);
-
-  //   // const takeoffCommand = {
-  //   //   command: 22, // MAV_CMD_NAV_TAKEOFF
-  //   //   confirmation: 0,
-  //   //   param1: 0,      // Minimum pitch (leave as 0)
-  //   //   param2: 0,      // Empty
-  //   //   param3: 0,      // Empty
-  //   //   param4: 0,      // Yaw angle (0 = use current)
-  //   //   param5: homePosition.lat ?? 0,      // Latitude
-  //   //   param6: homePosition.lon ?? 0,      // Longitude
-  //   //   param7: altitude, // Altitude (relative or global depending on frame)
-  //   //   // target_system: targetInfo.target_system,
-  //   //   // target_component: targetInfo.target_component,
-  //   //   mavpackettype: "COMMAND_LONG",
-  //   // };
-  //   // dispatch(appendDrawingMissionItem(takeoffCommand));
-
-  //   const isValidCoord = (val) =>
-  //     typeof val === "number" && !isNaN(val)
-
-  //   if (!takeoffAdded) {
-  //     const takeoffLat = isValidCoord(targetInfo.lat)
-  //       ? targetInfo.lat
-  //       : homePosition.lat
-  //     const takeoffLon = isValidCoord(targetInfo.lon)
-  //       ? targetInfo.lon
-  //       : homePosition.lon
-
-  //     if (!isValidCoord(takeoffLat) || !isValidCoord(takeoffLon)) {
-  //       console.error("Cannot add TAKEOFF command: invalid lat/lon")
-  //       return
-  //     }
-
-  //     const takeoffCommand = {
-  //       command: 22, // MAV_CMD_NAV_TAKEOFF
-  //       x: coordToInt(takeoffLat), // param 5, 6, 7 isn't working here use x, y, z.
-  //       y: coordToInt(takeoffLon),
-  //       z: newMissionItemAltitude,
-  //       confirmation: 0,
-  //       param1: 0,      // Minimum pitch
-  //       param2: 0,      // Empty
-  //       param3: 0,      // Empty
-  //       param4: 0,      // Yaw angle
-  //       frame: parseInt(
-  //         Object.keys(MAV_FRAME_LIST).find(
-  //           (key) =>
-  //             MAV_FRAME_LIST[key] ===
-  //             (activeTabRef.current === "fence"
-  //               ? "MAV_FRAME_GLOBAL"
-  //               : "MAV_FRAME_GLOBAL_RELATIVE_ALT"),
-  //         ),
-  //       ),
-  //       mavpackettype: "COMMAND_LONG",
-  //     };
-  //     dispatch(appendDrawingMissionItem(takeoffCommand))
-  //     setTakeoffAdded(true)
-
-  //     console.log("Sending Takeoff Command:", takeoffCommand);
-  //   }
-  // }
-
-  // function addReturnToLaunch() {
-  //   const rtlCommand = {
-  //     command: 20, // MAV_CMD_NAV_RETURN_TO_LAUNCH
-  //     confirmation: 0,
-  //     param1: 0,
-  //     param2: 0,
-  //     param3: 0,
-  //     param4: 0,
-  //     target_component: targetInfo.target_component ?? 0,
-  //     target_system: targetInfo.target_system ?? 0,
-  //     mavpackettype: "COMMAND_LONG",
-  //   };
-
-  //   console.log("Sending RTL command:", rtlCommand);
-  //   dispatch(appendDrawingMissionItem(rtlCommand));
-  //   dispatch(setUnwrittenChanges({
-  //     ...unwrittenChanges,
-  //     mission: true,
-  //   }));
-  // }
 
   function createHomePositionItem() {
     if (!homePosition) {
@@ -487,6 +407,7 @@ export default function Missions() {
         [activeTabRef.current]: true,
       }),
     )
+    setRtlAdded(false); // check if it was rtl
   }
 
   function updateMissionItemOrder(missionItemId, indexIncrement) {
@@ -539,7 +460,7 @@ export default function Missions() {
     setMissionProgressModalTitle(`Reading ${activeTabRef.current} from drone`)
     resetMissionProgressModalData()
     dispatch(setMissionProgressModal(true))
-    // condition - if takeoff or rtl points are present in mission read, handle buttons accordingly.
+    // TODO: condition - if takeoff or rtl points are present in mission read, handle buttons accordingly.
   }
 
   function writeMissionToDrone() {
@@ -822,189 +743,36 @@ export default function Missions() {
         </div>
       )}
 
-      {/* {connected ? ( */}
       <div className="flex flex-col h-screen overflow-hidden">
         <div className="flex flex-1 overflow-hidden">
-          {/* Resizable Sidebar */}
-          <ResizableBox
-            width={200}
-            height={Infinity}
-            minConstraints={[200, Infinity]}
-            maxConstraints={[600, Infinity]}
-            resizeHandles={["e"]}
-            axis="x"
-            handle={
-              <div className="w-2 h-full bg-falcongrey-900 hover:bg-falconred-500 cursor-col-resize absolute right-0 top-0 z-10"></div>
-            }
-            className="relative bg-falcongrey-800 overflow-y-auto"
-          >
-            <div className="flex flex-col gap-8 p-4">
-              <div className="flex flex-col gap-4">
-                <UnwrittenChangesWarning
-                  unwrittenChanges={unwrittenChanges}
-                />
-
-                <Button
-                  onClick={() => {
-                    readMissionFromDrone()
-                  }}
-                  disabled={!connected}
-                  className="grow"
-                >
-                  Read {activeTab}
-                </Button>
-                <Button
-                  onClick={() => {
-                    writeMissionToDrone()
-                  }}
-                  disabled={!connected}
-                  className="grow"
-                >
-                  Write {activeTab}
-                </Button>
-
-                {/* custom buttons */}
-                <div>
-                  {/* file */}
-                  <Button onClick={() => { }}>
-                    File
-                  </Button>
-                  {/* takeoff */}
-                  <Button
-                    onClick={() => addNewMissionItem(0, 0, "takeoff")}
-                    disabled={takeoffAdded}
-                  >
-                    Takeoff
-                  </Button>
-                  {/* toggle */}
-                  <Button
-                    onClick={() => dispatch(toggleMapLock())}
-                    disabled={!takeoffAdded || rtlAdded}
-                  >
-                    {/* Map: {lockedMapInteractions ? 'Locked' : 'Unlocked'} */}
-                    add waypoint: {lockedMapInteractions ? 'Locked' : 'Unlocked'}
-                  </Button>
-                  {/* return to launch */}
-                  <Button
-                    onClick={() => addNewMissionItem(0, 0, "return_to_launch")}
-                    disabled={!takeoffAdded || rtlAdded}
-                  >
-                    Return to Launch
-                  </Button>
-                  {/* clear mission */}
-                  <Button onClick={clearMissionItems}>
-                    Clear {activeTab}
-                  </Button>
-
-                  {/* settings dropdown/menu */}
-                  <select defaultValue="">
-                    <option disabled value="">Settings</option>
-                    <option value="option1">Option 1</option>
-                    <option value="option2">Option 2</option>
-                    <option value="option3">Option 3</option>
-                  </select>
-
-                  <div className="relative inline-block" ref={dropdownRef}>
-                    <button
-                      onClick={() => setOpen(!open)}
-                      className="px-3 py-2 bg-falcongrey-700 rounded-md text-white"
-                    >
-                      Settings
-                    </button>
-
-                    {open && (
-                      <div className="absolute left-0 mt-2 w-40 bg-falcongrey-700 rounded-md shadow-lg z-50 p-1">
-                        <button
-                          className="w-full text-left px-4 py-2 hover:bg-falcongrey-600 rounded"
-                          onClick={() => {
-                            console.log("Option 1 clicked");
-                            setOpen(false);
-                          }}
-                        >
-                          Option 1
-                        </button>
-                        <button
-                          className="w-full text-left px-4 py-2 hover:bg-falcongrey-600 rounded"
-                          onClick={() => {
-                            console.log("Option 2 clicked");
-                            setOpen(false);
-                          }}
-                        >
-                          Option 2
-                        </button>
-                        <button
-                          className="w-full text-left px-4 py-2 hover:bg-falcongrey-600 rounded"
-                          onClick={() => {
-                            console.log("Option 3 clicked");
-                            setOpen(false);
-                          }}
-                        >
-                          Option 3
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-              <Divider className="my-1" />
-
-              <div className="flex flex-col gap-4">
-                <FileButton
-                  resetRef={importFileResetRef}
-                  onChange={setImportFile}
-                  accept=".waypoints,.txt"
-                  className="grow"
-                >
-                  {(props) => <Button {...props}>Import from file</Button>}
-                </FileButton>
-                <Button
-                  onClick={() => {
-                    saveMissionToFile()
-                  }}
-                  className="grow"
-                >
-                  Save to file
-                </Button>
-              </div>
-              <Divider className="my-1" />
-
-              <div className="flex flex-col gap-2">
-                <p className="font-bold">
-                  Home location{" "}
-                  <span>
-                    <Tooltip
-                      className="inline"
-                      label="The home location is written to a mission save file."
-                    >
-                      <IconInfoCircle size={20} />
-                    </Tooltip>
-                  </span>
-                </p>
-                <p>
-                  Lat:{" "}
-                  {intToCoord(homePosition?.lat).toFixed(
-                    coordsFractionDigits,
-                  )}
-                </p>
-                <p>
-                  Lon:{" "}
-                  {intToCoord(homePosition?.lon).toFixed(
-                    coordsFractionDigits,
-                  )}
-                </p>
-              </div>
-
-              <Divider className="my-1" />
-
-              <div className="flex flex-col gap-2">
-                <MissionStatistics />
-              </div>
-            </div>
-          </ResizableBox>
 
           {/* Main content area */}
           <div className="flex-1 flex flex-col overflow-hidden">
+
+            {/* Sidebar */}
+            <Sidebar
+              setRtlAdded={setRtlAdded}
+              rtlAdded={rtlAdded}
+              takeoffAdded={takeoffAdded}
+              setTakeoffAdded={setTakeoffAdded}
+              addNewMissionItem={addNewMissionItem}
+              toggleMapLock={toggleMapLock}
+              dispatch={dispatch}
+              lockedMapInteractions={lockedMapInteractions}
+              activeTab={activeTab}
+              clearMissionItems={clearMissionItems}
+              connected={connected}
+              readMissionFromDrone={readMissionFromDrone}
+              writeMissionToDrone={writeMissionToDrone}
+              importFileResetRef={importFileResetRef}
+              setImportFile={setImportFile}
+              saveMissionToFile={saveMissionToFile}
+              UnwrittenChangesWarning={UnwrittenChangesWarning}
+              unwrittenChanges={unwrittenChanges}
+              setZoomTarget={handleZoomTarget}
+              setSelectedOption={setSelectedOption}
+            />
+
             {/* Map area */}
             <div className="flex-1 relative">
               <MissionsMapSection
@@ -1018,6 +786,8 @@ export default function Missions() {
                 clearMissionItems={clearMissionItems}
                 addFencePolygon={addFencePolygon}
                 activeTab={activeTab}
+                zoomTarget={zoomTarget}
+                setZoomTarget={setZoomTarget}
               />
             </div>
 
@@ -1079,9 +849,7 @@ export default function Missions() {
           </div>
         </div>
       </div>
-      {/* ) : (
-        <NoDroneConnected />
-      )} */}
+
     </Layout>
   )
 }

@@ -1,290 +1,340 @@
-import { useState } from 'react';
-import { ResizableBox } from 'react-resizable';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Button, FileButton, Tooltip } from '@mantine/core';
 
-const FloatingMenu = ({ items }) => {
-  return (
-    <div style={{
-      position: 'absolute',
-      left: '100%',
-      top: 0,
-      background: '#333',
-      padding: '10px',
-      borderRadius: '4px',
-      display: 'flex',
-      flexDirection: 'column',
-      zIndex: 10,
-      marginLeft: '10px',
-      minWidth: '150px'
-    }}>
-      {items.map((item, index) => {
-        const isDisabled = item.toLowerCase().includes('(disabled)');
-        return (
-          <button
-            key={index}
-            disabled={isDisabled}
-            style={{
-              background: isDisabled ? '#555' : '#666',
-              color: '#fff',
-              border: 'none',
-              marginBottom: '5px',
-              padding: '8px',
-              cursor: isDisabled ? 'not-allowed' : 'pointer',
-              opacity: isDisabled ? 0.6 : 1,
-              textAlign: 'left'
-            }}
-          >
-            {item}
-          </button>
-        );
-      })}
-    </div>
-  );
+// Image imports
+import map_add_mission from '../img/map_add_mission.svg';
+import map_add_mission_black from '../img/map_add_mission_black.svg';
+import map_center_black from '../img/map_center_black.svg';
+import map_center from '../img/map_center.svg';
+import map_draw_shape from '../img/map_draw_shape.svg';
+import map_sync_black from '../img/map_sync_black.svg';
+// import map_sync_changed from '../img/map_sync_changed.svg';
+import map_sync from '../img/map_sync.svg';
+import rtl from '../img/rtl.svg';
+import takeoff from '../img/takeoff.svg'
+import land from '../img/land.svg'
+
+// Styles
+const menuButtonBaseStyle = {
+  // background: '#666',
+  marginTop: '5px',
 };
 
-const SidebarButton = ({ label, icon, menuItems, isOpen, onClick }) => {
+const SidebarButton = React.memo(function SidebarButton({
+  label,
+  icon,
+  isOpen,
+  onClick,
+  disabled = false,
+  isSelected = false,
+  children
+}) {
+  const handleClick = (e) => {
+    if (disabled) {
+      e.preventDefault();
+      return;
+    }
+    onClick?.(e);
+  };
+
+  let backgroundColor = '#2c2c2c';
+  let color = 'white';
+  if (isSelected) {
+    backgroundColor = '#fdd835';
+    color = 'black';
+  } else if (isOpen) {     // TODO: isOpen -> isSelected
+    backgroundColor = '#fdd835';
+    color = 'black';
+  }
+
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <button
-        onClick={onClick}
+        onClick={handleClick}
+        disabled={disabled}
         style={{
           width: '100%',
-          background: isOpen ? '#fdd835' : '#2c2c2c',
-          color: 'white',
+          background: backgroundColor,
+          color: color,
           border: 'none',
+          borderRadius: '4px',
           padding: '12px 0',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          cursor: 'pointer'
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
+          // filter: disabled ? 'blur(0.5px)' : 'none',
+          // transition: 'all 0.2s ease',
         }}
       >
-        <span>{icon}</span>
+        {/* <span>{icon}</span> */}
+        <img
+          src={icon}
+          width='40px'
+        />
         <small>{label}</small>
       </button>
-      {isOpen && menuItems && (
-        <FloatingMenu items={menuItems} />
+
+      {isOpen && !disabled && children && (
+        <div style={{
+          position: 'absolute',
+          left: '100%',
+          top: 0,
+          background: '#333',
+          padding: '10px',
+          borderRadius: '4px',
+          zIndex: 10,
+          marginLeft: '10px',
+          minWidth: '150px',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          {children}
+        </div>
       )}
     </div>
   );
-};
+});
 
-function Sidebar() {
-  // const [openMenu, setOpenMenu] = useState(null);
+const FileMenu = ({
+  connected,
+  activeTab,
+  readMissionFromDrone,
+  writeMissionToDrone,
+  clearMissionItems,
+  importFileResetRef,
+  setImportFile,
+  saveMissionToFile,
+  unwrittenChanges,
+  UnwrittenChangesWarning,
+  closeMenu,
+  setIsWaypointSelected,
+  setIsROISelected,
+}) => (
+  <>
+    {/* TODO: fix this unwritten changes warning */}
+    {(unwrittenChanges !== null) && <UnwrittenChangesWarning unwrittenChanges={unwrittenChanges} />}
 
-  // const handleMenuToggle = (menu) => {
-  //   setOpenMenu(openMenu === menu ? null : menu);
-  // };
+    <Tooltip label={!connected ? 'Not connected to drone.' : 'Read Mission from drone'}>
+      <Button onClick={() => connected && (readMissionFromDrone(), closeMenu())} disabled={!connected}>
+        Read {activeTab}
+      </Button>
+    </Tooltip>
 
-  // return (
-  //   <div style={{ display: 'flex', height: '100vh' }}>
-  //     {/* Sidebar */}
-  //     <div style={{
-  //       width: '60px',
-  //       background: '#1e1e1e',
-  //       display: 'flex',
-  //       flexDirection: 'column',
-  //       alignItems: 'center',
-  //       padding: '10px 0'
-  //     }}>
-  //       <SidebarButton
-  //         label="File"
-  //         icon="🔥"
-  //         menuItems={['New', 'Open', 'Save']}
-  //         isOpen={openMenu === 'file'}
-  //         onClick={() => handleMenuToggle('file')}
-  //       />
-  //       <SidebarButton label="Takeoff" icon="⬆️" />
-  //       <SidebarButton label="Waypoint" icon="➕" />
-  //       <SidebarButton label="ROI" icon="🎯" />
-  //       <SidebarButton label="Pattern" icon="🔁" />
-  //       <SidebarButton label="Return" icon="↩️" />
-  //       <SidebarButton
-  //         label="Center"
-  //         icon="📍"
-  //         menuItems={[
-  //           'Mission',
-  //           'All items',
-  //           'Launch',
-  //           'Vehicle (disabled)',
-  //           'Current Location (disabled)',
-  //           'Specified Location'
-  //         ]}
-  //         isOpen={openMenu === 'center'}
-  //         onClick={() => handleMenuToggle('center')}
-  //       />
-  //     </div>
-  //   </div>
-  // );
+    <Tooltip label={!connected ? 'Not connected to drone.' : 'Write mission to drone'}>
+      <Button onClick={() => connected && (writeMissionToDrone(), closeMenu())} disabled={!connected} style={menuButtonBaseStyle}>
+        Write {activeTab}
+      </Button>
+    </Tooltip>
+
+    <Button onClick={() => (clearMissionItems(), closeMenu(), setIsWaypointSelected(false), setIsROISelected(false))} style={menuButtonBaseStyle}>
+      Clear {activeTab}
+    </Button>
+
+    <FileButton resetRef={importFileResetRef} onChange={setImportFile} accept=".waypoints,.txt" style={menuButtonBaseStyle}>
+      {(props) => <Button {...props}>Import from file</Button>}
+    </FileButton>
+
+    <Button onClick={saveMissionToFile} style={menuButtonBaseStyle}>Save to file</Button>
+  </>
+);
+
+const PatternMenu = ({ closeMenu }) => (
+  <>
+    <p>Create complex pattern:</p>
+    {["Survey", "Corridor Scan", "Structure Scan"].map((label) => (
+      <Button key={label} onClick={closeMenu} style={menuButtonBaseStyle}>{label}</Button>
+    ))}
+  </>
+);
+
+const CenterMenu = ({ setZoomTarget, closeMenu }) => (
+  <>
+    {["Drone", "Mission", "Home"].map((target) => (
+      <Button key={target} onClick={() => (setZoomTarget(target), closeMenu())} style={menuButtonBaseStyle}>
+        {target}
+      </Button>
+    ))}
+  </>
+);
+
+
+export default function Sidebar({
+  rtlAdded,
+  setRtlAdded,
+  takeoffAdded,
+  setTakeoffAdded,
+  addNewMissionItem,
+  toggleMapLock,
+  dispatch,
+  lockedMapInteractions,
+  activeTab,
+  clearMissionItems,
+  connected,
+  readMissionFromDrone,
+  writeMissionToDrone,
+  importFileResetRef,
+  setImportFile,
+  saveMissionToFile,
+  UnwrittenChangesWarning,
+  unwrittenChanges,
+  setZoomTarget,
+  setSelectedOption,
+}) {
+  const [openMenu, setOpenMenu] = useState(null);
+  const [iswaypointSelected, setIsWaypointSelected] = useState(false);
+  const [isROISelected, setIsROISelected] = useState(false);
+
+  // to update the states so that options dont conflict the command.
+  // Automatically lock/unlock map when either Waypoint or ROI mode is active
+  useEffect(() => {
+    {console.log("wp",iswaypointSelected)}
+    (iswaypointSelected) ? (lockedMapInteractions ? dispatch(toggleMapLock()) : null) : (lockedMapInteractions ? null : dispatch(toggleMapLock()));
+  }, [iswaypointSelected])
+
+  // useEffect(() => {
+  //   {console.log("roi",isROISelected)}
+  //   (isROISelected) ? (lockedMapInteractions ? dispatch(toggleMapLock()) : null) : (lockedMapInteractions ? null : dispatch(toggleMapLock()));
+  // }, [isROISelected])
+
+  const closeMenu = useCallback(() => setOpenMenu(null), []);
+
+  const handleMenuToggle = useCallback((menu) => {
+    setOpenMenu((prev) => (prev === menu ? null : menu));
+  }, []);
+
+  const handleTakeoffClick = useCallback(() => {
+    addNewMissionItem(0, 0, "takeoff");
+    handleWaypointClick();           // auto-enter Waypoint mode
+    // setIsROISelected(false);         // ensure ROI is off
+  }, [addNewMissionItem]);
+
+  const handleLandClick = useCallback(() => {
+    addNewMissionItem(0, 0, "land");
+  }, [addNewMissionItem]);
+
+  const handleWaypointClick = useCallback(() => {
+    setIsWaypointSelected((prev) => {
+      // if (!prev) setIsROISelected(false);  // disable ROI if enabling Waypoint
+      return !prev;
+    });
+    setSelectedOption('waypoint');
+  }, []);
+
+  // const handleROIClick = useCallback(() => {
+  //   setIsROISelected((prev) => {
+  //     if (!prev) setIsWaypointSelected(false);  // disable Waypoint if enabling ROI
+  //     return !prev;
+  //   });
+  //   setSelectedOption('roi');
+  // }, []);
+
+  const handleReturnClick = useCallback(() => {
+    addNewMissionItem(0, 0, "return_to_launch");
+    setIsWaypointSelected(false);
+    // setIsROISelected(false);
+  }, [addNewMissionItem]);
+
+  const handleZoom = useCallback((target) => {
+    setZoomTarget(target);
+    closeMenu();
+  }, [setZoomTarget, closeMenu]);
+
   return (
-    <ResizableBox
-      width={200}
-      height={Infinity}
-      minConstraints={[200, Infinity]}
-      maxConstraints={[600, Infinity]}
-      resizeHandles={["e"]}
-      axis="x"
-      handle={
-        <div className="w-2 h-full bg-falcongrey-900 hover:bg-falconred-500 cursor-col-resize absolute right-0 top-0 z-10"></div>
-      }
-      className="relative bg-falcongrey-800 overflow-y-auto"
-    >
-      <div className="flex flex-col gap-8 p-4">
-        <div className="flex flex-col gap-4">
-          <UnwrittenChangesWarning
-            unwrittenChanges={unwrittenChanges}
-          />
+    <div style={{
+      position: 'absolute',
+      width: '60px',
+      // backgroundColor: 'gray',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      zIndex: 100,
+      gap: '5px',
+      margin: '5px',
+    }}>
 
-          <Button
-            onClick={() => {
-              readMissionFromDrone()
-            }}
-            disabled={!connected}
-            className="grow"
-          >
-            Read {activeTab}
-          </Button>
-          <Button
-            onClick={() => {
-              writeMissionToDrone()
-            }}
-            disabled={!connected}
-            className="grow"
-          >
-            Write {activeTab}
-          </Button>
+      {/* map sync icon should change based off unwritten changes like in QGC */}
+      <SidebarButton
+        label="File"
+        icon={openMenu === 'file' ? map_sync_black : map_sync} // map_sync_changed
+        isOpen={openMenu === 'file'}
+        onClick={() => handleMenuToggle('file')}
+      >
+        <FileMenu
+          connected={connected}
+          activeTab={activeTab}
+          readMissionFromDrone={readMissionFromDrone}
+          writeMissionToDrone={writeMissionToDrone}
+          clearMissionItems={clearMissionItems}
+          importFileResetRef={importFileResetRef}
+          setImportFile={setImportFile}
+          saveMissionToFile={saveMissionToFile}
+          unwrittenChanges={unwrittenChanges}
+          UnwrittenChangesWarning={UnwrittenChangesWarning}
+          closeMenu={closeMenu}
+          setIsWaypointSelected={setIsWaypointSelected}
+          setIsROISelected={setIsROISelected}
+        />
+      </SidebarButton>
 
-          {/* custom buttons */}
-          <div>
-            {/* file */}
-            <Button onClick={() => { }}>
-              File
-            </Button>
-            {/* takeoff */}
-            <Button onClick={() => sendTakeoffCommand(15)}>
-              Takeoff to 15m
-            </Button>
-            {/* toggle */}
-            <Button onClick={() => dispatch(toggleMapLock())}>
-              Map: {lockedMapInteractions ? 'Locked' : 'Unlocked'}
-            </Button>
-            {/* return to launch */}
-            <Button onClick={addReturnToLaunch} disabled={true}>
-              Return to Launch
-            </Button>
-            {/* clear mission */}
-            <Button onClick={clearMissionItems}>
-              Clear Mission
-            </Button>
+      <SidebarButton
+        label="Takeoff"
+        icon={takeoff}
+        onClick={handleTakeoffClick}
+        disabled={takeoffAdded}
+      />
 
-            <select>
-              <option disabled selected>Settings</option>
-              <option value="option1">Option 1</option>
-              <option value="option2">Option 2</option>
-              <option value="option3">Option 3</option>
-            </select>
+      <SidebarButton
+        label="Waypoint"
+        icon={(iswaypointSelected) ? map_add_mission_black : map_add_mission}
+        onClick={handleWaypointClick}
+        isSelected={iswaypointSelected}
+        disabled={!takeoffAdded} // || rtlAdded
+      />
 
-            {/* settings dropdown/menu */}
-            <div className="relative inline-block" ref={dropdownRef}>
-              <button
-                onClick={() => setOpen(!open)}
-                className="px-3 py-2 bg-falcongrey-700 rounded-md text-white"
-              >
-                Settings
-              </button>
+      {/* <SidebarButton
+        label="ROI"
+        icon={(isROISelected) ? map_add_mission_black : map_add_mission}
+        isSelected={isROISelected}
+        // onClick={handleROIClick}
+        disabled={true}
+      /> */}
 
-              {open && (
-                <div className="absolute left-0 mt-2 w-40 bg-falcongrey-700 rounded-md shadow-lg z-50 p-1">
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-falcongrey-600 rounded"
-                    onClick={() => {
-                      console.log("Option 1 clicked");
-                      setOpen(false);
-                    }}
-                  >
-                    Option 1
-                  </button>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-falcongrey-600 rounded"
-                    onClick={() => {
-                      console.log("Option 2 clicked");
-                      setOpen(false);
-                    }}
-                  >
-                    Option 2
-                  </button>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-falcongrey-600 rounded"
-                    onClick={() => {
-                      console.log("Option 3 clicked");
-                      setOpen(false);
-                    }}
-                  >
-                    Option 3
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+      <SidebarButton
+        label="Pattern"
+        icon={map_draw_shape}
+        isOpen={openMenu === 'pattern'}
+        onClick={() => handleMenuToggle('pattern')}
+      >
+        <PatternMenu closeMenu={closeMenu} />
+      </SidebarButton>
 
-        </div>
+      <SidebarButton
+        label="Return"
+        icon={rtl}
+        onClick={handleReturnClick}
+        disabled={!takeoffAdded} // || rtlAdded
+      />
 
-        <Divider className="my-1" />
+      <SidebarButton
+        label="Land"
+        icon={land}
+        onClick={handleLandClick}
+        disabled={!takeoffAdded} // || rtlAdded
+      />
 
-        <div className="flex flex-col gap-4">
-          <FileButton
-            resetRef={importFileResetRef}
-            onChange={setImportFile}
-            accept=".waypoints,.txt"
-            className="grow"
-          >
-            {(props) => <Button {...props}>Import from file</Button>}
-          </FileButton>
-          <Button
-            onClick={() => {
-              saveMissionToFile()
-            }}
-            className="grow"
-          >
-            Save to file
-          </Button>
-        </div>
-
-        <Divider className="my-1" />
-
-        <div className="flex flex-col gap-2">
-          <p className="font-bold">
-            Home location{" "}
-            <span>
-              <Tooltip
-                className="inline"
-                label="The home location is written to a mission save file."
-              >
-                <IconInfoCircle size={20} />
-              </Tooltip>
-            </span>
-          </p>
-          <p>
-            Lat:{" "}
-            {intToCoord(homePosition?.lat).toFixed(
-              coordsFractionDigits,
-            )}
-          </p>
-          <p>
-            Lon:{" "}
-            {intToCoord(homePosition?.lon).toFixed(
-              coordsFractionDigits,
-            )}
-          </p>
-        </div>
-
-        <Divider className="my-1" />
-
-        <div className="flex flex-col gap-2">
-          <MissionStatistics />
-        </div>
-      </div>
-    </ResizableBox>
+      <SidebarButton
+        label="Center"
+        icon={(openMenu === 'center') ? map_center_black : map_center}
+        isOpen={openMenu === 'center'}
+        onClick={() => handleMenuToggle('center')}
+      >
+        <CenterMenu
+          setZoomTarget={handleZoom}
+          closeMenu={closeMenu}
+        />
+      </SidebarButton>
+    </div>
   );
 }
-
-export default Sidebar;

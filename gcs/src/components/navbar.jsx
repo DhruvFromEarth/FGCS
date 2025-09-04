@@ -321,15 +321,6 @@ export default function Navbar() {
             Dashboard
           </Link>
           <Link
-            to="/video"
-            className={twMerge(
-              linkClassName,
-              currentPage === "video" && "text-falconred font-bold",
-            )}
-          >
-            Video
-          </Link>
-          <Link
             to="/missions"
             className={twMerge(
               linkClassName,
@@ -337,6 +328,15 @@ export default function Navbar() {
             )}
           >
             Missions
+          </Link>
+          <Link
+            to="/video"
+            className={twMerge(
+              linkClassName,
+              currentPage === "video" && "text-falconred font-bold",
+            )}
+          >
+            Video
           </Link>
           <Link
             to="/graphs"
