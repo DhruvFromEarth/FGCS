@@ -20,13 +20,14 @@ const MarkerPin = React.memo(
     tooltipText = null,
     showOnTop = false,
     draggable = false,
+    zindex = 10,
     dragEndCallback = () => {},
   }) => {
     return (
       <Marker
         latitude={lat}
         longitude={lon}
-        className={showOnTop && "z-10"}
+        className={showOnTop && `z-${zindex}`}
         draggable={draggable}
         onDragEnd={(e) => {
           dragEndCallback({

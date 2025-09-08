@@ -3,7 +3,7 @@
 */
 
 import { Table } from "@mantine/core"
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { isGlobalFrameHomeCommand } from "../../helpers/filterMissions"
 import MissionItemsTableRow from "./missionItemsTableRow"
 
@@ -18,42 +18,35 @@ function MissionItemsTableNonMemo({
 }) {
   const missionItems = useSelector(selectDrawingMissionItems)
 
-  return (
-    <Table striped withTableBorder withColumnBorders stickyHeader>
-      <Table.Thead>
-        <Table.Tr>
-          <Table.Th></Table.Th>
-          <Table.Th>Command</Table.Th>
-          <Table.Th>Param 1</Table.Th>
-          <Table.Th>Param 2</Table.Th>
-          <Table.Th>Param 3</Table.Th>
-          <Table.Th>Param 4</Table.Th>
-          <Table.Th>Lat</Table.Th>
-          <Table.Th>Lng</Table.Th>
-          <Table.Th>Alt</Table.Th>
-          <Table.Th>Frame</Table.Th>
-          <Table.Th></Table.Th>
-        </Table.Tr>
-      </Table.Thead>
-      <Table.Tbody>
-        {missionItems.map((missionItem, idx) => {
-          // Skip home location
-          if (idx === 0 && isGlobalFrameHomeCommand(missionItem)) {
-            return null
-          }
+  const [openItemId, setOpenItemId] = useState(null);
 
-          return (
-            <MissionItemsTableRow
-              key={missionItem.id}
-              missionItem={missionItem}
-              updateMissionItem={updateMissionItem}
-              deleteMissionItem={deleteMissionItem}
-              updateMissionItemOrder={updateMissionItemOrder}
-            />
-          )
-        })}
-      </Table.Tbody>
-    </Table>
+  const handleItemClick = (id) => {
+    setOpenItemId(id);
+  };
+
+  return (<>
+    <div>
+      {console.log(missionItems)}
+      {missionItems.map((missionItem, idx) => {
+        // Skip home location
+        if (idx === 0 && isGlobalFrameHomeCommand(missionItem)) {
+          return null
+        }
+
+        return (
+          <MissionItemsTableRow
+            key={missionItem.id}
+            missionItem={missionItem}
+            updateMissionItem={updateMissionItem}
+            deleteMissionItem={deleteMissionItem}
+            updateMissionItemOrder={updateMissionItemOrder}
+            openItemId={openItemId}
+            handleItemClick={handleItemClick}
+          />
+        )
+      })}
+    </div>
+  </>
   )
 }
 

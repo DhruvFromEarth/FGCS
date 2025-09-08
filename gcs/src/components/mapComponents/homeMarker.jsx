@@ -25,6 +25,7 @@ export default function HomeMarker({
         colour={tailwindColors.green[400]}
         text={"H"}
         showOnTop={true}
+        zindex={20}
         draggable={true}
         dragEndCallback={updateMissionHomePositionDragCb}
       />

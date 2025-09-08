@@ -137,12 +137,16 @@ export default function Missions() {
   const mapRef = useRef()
   const newMissionItemAltitude = 30 // TODO: Make this configurable
   const [zoomTarget, setZoomTarget] = useState(null);
-  const [selectedOption, setSelectedOption] = useState('takeoff') // to check for which command to add marker.
+  const [selectedOption, setSelectedOption] = useState('waypoint') // to check for which command to add marker.
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false)
 
   // Send some messages when file is loaded
   useEffect(() => {
     dispatch(emitGetHomePosition())
     dispatch(emitGetTargetInfo())
+    console.log(missionItems)
+    const hasTakeoff = missionItems.some(item => item.command === 22);
+    setTakeoffAdded(hasTakeoff);
   }, [currentPage])
 
   useEffect(() => {
@@ -743,111 +747,98 @@ export default function Missions() {
         </div>
       )}
 
-      <div className="flex flex-col h-screen overflow-hidden">
-        <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex h-screen overflow-hidden">
 
-          {/* Main content area */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Left Sidebar */}
+        <Sidebar
+          setRtlAdded={setRtlAdded}
+          rtlAdded={rtlAdded}
+          takeoffAdded={takeoffAdded}
+          setTakeoffAdded={setTakeoffAdded}
+          addNewMissionItem={addNewMissionItem}
+          toggleMapLock={toggleMapLock}
+          dispatch={dispatch}
+          lockedMapInteractions={lockedMapInteractions}
+          activeTab={activeTab}
+          clearMissionItems={clearMissionItems}
+          connected={connected}
+          readMissionFromDrone={readMissionFromDrone}
+          writeMissionToDrone={writeMissionToDrone}
+          importFileResetRef={importFileResetRef}
+          setImportFile={setImportFile}
+          saveMissionToFile={saveMissionToFile}
+          UnwrittenChangesWarning={UnwrittenChangesWarning}
+          unwrittenChanges={unwrittenChanges}
+          setZoomTarget={handleZoomTarget}
+          setSelectedOption={setSelectedOption}
+        />
 
-            {/* Sidebar */}
-            <Sidebar
-              setRtlAdded={setRtlAdded}
-              rtlAdded={rtlAdded}
-              takeoffAdded={takeoffAdded}
-              setTakeoffAdded={setTakeoffAdded}
-              addNewMissionItem={addNewMissionItem}
-              toggleMapLock={toggleMapLock}
-              dispatch={dispatch}
-              lockedMapInteractions={lockedMapInteractions}
-              activeTab={activeTab}
-              clearMissionItems={clearMissionItems}
-              connected={connected}
-              readMissionFromDrone={readMissionFromDrone}
-              writeMissionToDrone={writeMissionToDrone}
-              importFileResetRef={importFileResetRef}
-              setImportFile={setImportFile}
-              saveMissionToFile={saveMissionToFile}
-              UnwrittenChangesWarning={UnwrittenChangesWarning}
-              unwrittenChanges={unwrittenChanges}
-              setZoomTarget={handleZoomTarget}
-              setSelectedOption={setSelectedOption}
-            />
-
-            {/* Map area */}
-            <div className="flex-1 relative">
-              <MissionsMapSection
-                passedRef={mapRef}
-                missionItems={missionItems}
-                fenceItems={fenceItems}
-                rallyItems={rallyItems}
-                markerDragEndCallback={updateMissionItem}
-                addNewMissionItem={addNewMissionItem}
-                updateMissionHomePosition={updateMissionHomePosition}
-                clearMissionItems={clearMissionItems}
-                addFencePolygon={addFencePolygon}
-                activeTab={activeTab}
-                zoomTarget={zoomTarget}
-                setZoomTarget={setZoomTarget}
-              />
-            </div>
-
-            {/* Resizable Bottom Bar */}
-            <ResizableBox
-              width={Infinity}
-              height={300}
-              minConstraints={[Infinity, 100]}
-              maxConstraints={[Infinity, 400]}
-              resizeHandles={["n"]}
-              axis="y"
-              handle={
-                <div className="w-full h-2 bg-falcongrey-900 hover:bg-falconred-500 cursor-row-resize absolute top-0 left-0 z-10"></div>
-              }
-              className="relative bg-falcongrey-800 overflow-y-auto"
-            >
-              <Tabs
-                value={activeTab}
-                onChange={(value) => dispatch(setActiveTab(value))}
-                className="mt-2"
-              >
-                <Tabs.List grow>
-                  <Tabs.Tab
-                    value="mission"
-                    color={tailwindColors.yellow[400]}
-                  >
-                    Mission
-                  </Tabs.Tab>
-                  <Tabs.Tab value="fence" color={tailwindColors.blue[400]}>
-                    Fence
-                  </Tabs.Tab>
-                  <Tabs.Tab value="rally" color={tailwindColors.purple[400]}>
-                    Rally
-                  </Tabs.Tab>
-                </Tabs.List>
-
-                <Tabs.Panel value="mission">
-                  <MissionItemsTable
-                    updateMissionItem={updateMissionItem}
-                    deleteMissionItem={deleteMissionItem}
-                    updateMissionItemOrder={updateMissionItemOrder}
-                  />
-                </Tabs.Panel>
-                <Tabs.Panel value="fence">
-                  <FenceItemsTable
-                    updateMissionItem={updateMissionItem}
-                    deleteMissionItem={deleteMissionItem}
-                    updateMissionItemOrder={updateMissionItemOrder}
-                  />
-                </Tabs.Panel>
-                <Tabs.Panel value="rally">
-                  <RallyItemsTable
-                    updateRallyItem={updateMissionItem}
-                    deleteRallyItem={deleteMissionItem}
-                  />
-                </Tabs.Panel>
-              </Tabs>
-            </ResizableBox>
-          </div>
+        {/* Map area */}
+        <div className="flex-1 relative">
+          <MissionsMapSection
+            passedRef={mapRef}
+            missionItems={missionItems}
+            fenceItems={fenceItems}
+            rallyItems={rallyItems}
+            markerDragEndCallback={updateMissionItem}
+            addNewMissionItem={addNewMissionItem}
+            updateMissionHomePosition={updateMissionHomePosition}
+            clearMissionItems={clearMissionItems}
+            addFencePolygon={addFencePolygon}
+            activeTab={activeTab}
+            zoomTarget={zoomTarget}
+            setZoomTarget={setZoomTarget}
+          />
         </div>
+
+        {/* Right Sidebar */}
+        {isRightSidebarOpen ? <div
+          className="absolute bg-falcongrey/20 top-0 right-0 bottom-0 w-[250px] overflow-y-auto" //bg-falconred-500
+        >
+          <Tabs
+            value={activeTab}
+            onChange={(value) => dispatch(setActiveTab(value))}
+          >
+            <Tabs.List grow
+              className={'bg-falcongrey-TRANSLUCENT'}>
+              <Tabs.Tab value="mission" color={tailwindColors.yellow[400]} onClick={() => setIsRightSidebarOpen(false)}>
+                Mission &nbsp;▲
+              </Tabs.Tab>
+              {/* <Tabs.Tab value="fence" color={tailwindColors.blue[400]}>
+                Fence &nbsp;▲
+              </Tabs.Tab>
+              <Tabs.Tab value="rally" color={tailwindColors.purple[400]}>
+                Rally &nbsp;▲
+              </Tabs.Tab> */}
+            </Tabs.List>
+
+            <Tabs.Panel value="mission">
+              <MissionItemsTable
+                updateMissionItem={updateMissionItem}
+                deleteMissionItem={deleteMissionItem}
+                updateMissionItemOrder={updateMissionItemOrder}
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="fence">
+              <FenceItemsTable
+                updateMissionItem={updateMissionItem}
+                deleteMissionItem={deleteMissionItem}
+                updateMissionItemOrder={updateMissionItemOrder}
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="rally">
+              <RallyItemsTable
+                updateRallyItem={updateMissionItem}
+                deleteRallyItem={deleteMissionItem}
+              />
+            </Tabs.Panel>
+          </Tabs>
+        </div> : <div
+          className="absolute w-[250px] bg-falcongrey-TRANSLUCENT top-0 right-0 text-center cursor-pointer py-2 text-sm hover:bg-falcongrey-700"
+          onClick={() => setIsRightSidebarOpen(true)}>
+          Mission &nbsp;▼</div>
+        }
+
       </div>
 
     </Layout>

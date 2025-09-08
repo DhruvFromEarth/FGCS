@@ -1,3 +1,7 @@
+/*
+  This component displays the left sidebar for mission planning tools.
+*/
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button, FileButton, Tooltip } from '@mantine/core';
 
@@ -58,7 +62,7 @@ const SidebarButton = React.memo(function SidebarButton({
           color: color,
           border: 'none',
           borderRadius: '4px',
-          padding: '12px 0',
+          padding: '8px 0',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -71,7 +75,7 @@ const SidebarButton = React.memo(function SidebarButton({
         {/* <span>{icon}</span> */}
         <img
           src={icon}
-          width='40px'
+          width='30px'
         />
         <small>{label}</small>
       </button>
@@ -301,14 +305,14 @@ export default function Sidebar({
         disabled={true}
       /> */}
 
-      <SidebarButton
+      {/* <SidebarButton
         label="Pattern"
         icon={map_draw_shape}
         isOpen={openMenu === 'pattern'}
         onClick={() => handleMenuToggle('pattern')}
       >
         <PatternMenu closeMenu={closeMenu} />
-      </SidebarButton>
+      </SidebarButton> */}
 
       <SidebarButton
         label="Return"
