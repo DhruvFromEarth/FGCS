@@ -17,6 +17,15 @@ const missionInfoSlice = createSlice({
       fence_items: [],
       rally_items: [],
     },
+    homePosition: {
+      lat: 0,
+      lon: 0,
+      alt: 0,
+    },
+    targetInfo: {
+      target_component: 0,
+      target_system: 255,
+    },
     drawingItems: {
       // This is for the missions page, used locally and then will update currentMissionItems on save
       missionItems: [],
@@ -28,23 +37,15 @@ const missionInfoSlice = createSlice({
       fence: false,
       rally: false,
     },
+    modals: {
+      missionProgressModal: false,
+    },
     missionProgressData: {
       message: "",
       progress: null,
     },
-    modals: {
-      missionProgressModal: false,
-    },
-    homePosition: {
-      lat: 0,
-      lon: 0,
-      alt: 0,
-    },
-    targetInfo: {
-      target_component: 0,
-      target_system: 255,
-    },
     activeTab: "mission",
+    takeoffAdded: false,
     lockedMapInteractions: false,
   },
   reducers: {
@@ -181,15 +182,21 @@ const missionInfoSlice = createSlice({
       if (action.payload === state.modals.missionProgressModal) return
       state.modals.missionProgressModal = action.payload
     },
-    setActiveTab: (state, action) => {
-      if (action.payload === state.activeTab) return
-      state.activeTab = action.payload
-    },
     setMissionProgressData: (state, action) => {
       if (action.payload === state.missionProgressData) return
       state.missionProgressData = action.payload
     },
-
+    setActiveTab: (state, action) => {
+      if (action.payload === state.activeTab) return
+      state.activeTab = action.payload
+    },
+    setTakeoffAdded: (state, action) => {
+      state.takeoffAdded = action.payload
+    },
+    toggleMapLock: (state) => {
+      state.lockedMapInteractions = !state.lockedMapInteractions;
+    },
+    
     // Emits
     emitGetTargetInfo: () => {
       socket.emit("get_target_info")
@@ -216,9 +223,6 @@ const missionInfoSlice = createSlice({
         items: action.payload.items,
       })
     },
-    toggleMapLock: (state) => {
-      state.lockedMapInteractions = !state.lockedMapInteractions;
-    },
   },
   selectors: {
     selectCurrentMission: (state) => state.currentMission,
@@ -232,6 +236,7 @@ const missionInfoSlice = createSlice({
     selectMissionProgressModal: (state) => state.modals.missionProgressModal,
     selectMissionProgressData: (state) => state.missionProgressData,
     selectActiveTab: (state) => state.activeTab,
+    selectTakeoffAdded: (state) => state.takeoffAdded,
     selectLockedMapInteractions: (state) => state.lockedMapInteractions,
   },
 })
@@ -268,6 +273,7 @@ export const {
   selectMissionProgressModal,
   selectMissionProgressData,
   selectActiveTab,
+  selectTakeoffAdded,
   selectLockedMapInteractions,
 } = missionInfoSlice.selectors
 export const {
@@ -289,14 +295,15 @@ export const {
   deleteDrawingRallyItem,
   setUnwrittenChanges,
   setMissionProgressModal,
-  setActiveTab,
   setMissionProgressData,
+  setActiveTab,
+  setTakeoffAdded,
+  toggleMapLock,
   emitGetTargetInfo,
   emitGetCurrentMission,
   emitWriteCurrentMission,
   emitImportMissionFromFile,
   emitExportMissionToFile,
-  toggleMapLock,
 } = missionInfoSlice.actions
 
 export default missionInfoSlice

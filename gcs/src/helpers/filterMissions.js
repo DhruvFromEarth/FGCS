@@ -18,11 +18,8 @@ export function filterMissionItems(missionItems) {
       missionItemsCopy.shift()
     }
 
-    // Filter out items with x or y as 0 (no coordinates)
     for (const missionItem of missionItemsCopy) {
-      if (missionItem.x !== 0 && missionItem.y !== 0) {
-        filteredMissionItems.push(missionItem)
-      }
+      filteredMissionItems.push(missionItem)
     }
   }
 

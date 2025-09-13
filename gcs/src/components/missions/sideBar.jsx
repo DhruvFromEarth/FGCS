@@ -18,6 +18,10 @@ import rtl from '../img/rtl.svg';
 import takeoff from '../img/takeoff.svg'
 import land from '../img/land.svg'
 
+// Redux
+import { useSelector } from 'react-redux';
+import { selectTakeoffAdded } from '../../redux/slices/missionSlice';
+
 // Styles
 const menuButtonBaseStyle = {
   // background: '#666',
@@ -167,8 +171,6 @@ const CenterMenu = ({ setZoomTarget, closeMenu }) => (
 export default function Sidebar({
   rtlAdded,
   setRtlAdded,
-  takeoffAdded,
-  setTakeoffAdded,
   addNewMissionItem,
   toggleMapLock,
   dispatch,
@@ -187,18 +189,23 @@ export default function Sidebar({
   setSelectedOption,
 }) {
   const [openMenu, setOpenMenu] = useState(null);
-  const [iswaypointSelected, setIsWaypointSelected] = useState(false);
+  const [isWaypointSelected, setIsWaypointSelected] = useState(false);
   const [isROISelected, setIsROISelected] = useState(false);
+
+  const takeoffAdded = useSelector(selectTakeoffAdded)
+
+  // Deselect waypoint when delete takeoff from list
+  useEffect(()=>{
+    if(!takeoffAdded) setIsWaypointSelected(false);
+  },[takeoffAdded])
 
   // to update the states so that options dont conflict the command.
   // Automatically lock/unlock map when either Waypoint or ROI mode is active
   useEffect(() => {
-    {console.log("wp",iswaypointSelected)}
-    (iswaypointSelected) ? (lockedMapInteractions ? dispatch(toggleMapLock()) : null) : (lockedMapInteractions ? null : dispatch(toggleMapLock()));
-  }, [iswaypointSelected])
+    (isWaypointSelected) ? (lockedMapInteractions ? dispatch(toggleMapLock()) : null) : (lockedMapInteractions ? null : dispatch(toggleMapLock()));
+  }, [isWaypointSelected])
 
   // useEffect(() => {
-  //   {console.log("roi",isROISelected)}
   //   (isROISelected) ? (lockedMapInteractions ? dispatch(toggleMapLock()) : null) : (lockedMapInteractions ? null : dispatch(toggleMapLock()));
   // }, [isROISelected])
 
@@ -291,9 +298,9 @@ export default function Sidebar({
 
       <SidebarButton
         label="Waypoint"
-        icon={(iswaypointSelected) ? map_add_mission_black : map_add_mission}
+        icon={(isWaypointSelected) ? map_add_mission_black : map_add_mission}
         onClick={handleWaypointClick}
-        isSelected={iswaypointSelected}
+        isSelected={isWaypointSelected}
         disabled={!takeoffAdded} // || rtlAdded
       />
 

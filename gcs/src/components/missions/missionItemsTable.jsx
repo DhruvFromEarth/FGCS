@@ -20,13 +20,17 @@ function MissionItemsTableNonMemo({
 
   const [openItemId, setOpenItemId] = useState(null);
 
+  // Open information box of the last added or clicked item.
+  useEffect(() => {
+    setOpenItemId(missionItems.length - 1)
+  }, [missionItems])
+
   const handleItemClick = (id) => {
     setOpenItemId(id);
   };
 
   return (<>
     <div>
-      {console.log(missionItems)}
       {missionItems.map((missionItem, idx) => {
         // Skip home location
         if (idx === 0 && isGlobalFrameHomeCommand(missionItem)) {

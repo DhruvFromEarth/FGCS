@@ -27,6 +27,8 @@ import { useSelector } from "react-redux"
 import { selectAircraftType } from "../../redux/slices/droneInfoSlice"
 
 const coordsFractionDigits = 9
+
+// for Information box
 const commandsHavingAltitude = ['TAKEOFF', 'RETURN_TO_LAUNCH', 'LAND', 'WAYPOINT'];
 const commandsHavingCoordinates = ['TAKEOFF', 'RETURN_TO_LAUNCH', 'LAND', 'WAYPOINT'];
 
@@ -42,20 +44,17 @@ export default function MissionItemsTableRow({
   const [missionItemData, setMissionItemData] = useState(missionItem);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
-  const skipUpdate = useRef(false);
-
   // Update parent when internal state changes
   useEffect(() => {
-    if (!skipUpdate.current && JSON.stringify(missionItem) !== JSON.stringify(missionItemData)) {
+    if (JSON.stringify(missionItem) !== JSON.stringify(missionItemData)) {
       updateMissionItem(missionItemData);
     }
-    skipUpdate.current = false;
   }, [missionItemData]);
-
   // Sync with parent changes (e.g., marker drag updates)
   useEffect(() => {
-    skipUpdate.current = true;
-    setMissionItemData(missionItem);
+    if (JSON.stringify(missionItem) !== JSON.stringify(missionItemData)) {
+      setMissionItemData(missionItem);
+    }
   }, [missionItem]);
 
   function getDisplayCommandName(commandName) {
@@ -98,105 +97,121 @@ export default function MissionItemsTableRow({
     return getDisplayCommandName(commandName);
   }
 
-function InformationBox({ command }) {
-  const altitude = commandsHavingAltitude.includes(command);
-  const coordinates = commandsHavingCoordinates.includes(command);
+  function InformationBox({ command }) {
+    const altitude = commandsHavingAltitude.includes(command);
+    const coordinates = commandsHavingCoordinates.includes(command);
 
-  const [tempAltitude, setTempAltitude] = useState(missionItemData.z ?? 0);
-  const [tempLat, setTempLat] = useState(intToCoord(missionItemData.x));
-  const [latError, setLatError] = useState(null);
-  const [tempLng, setTempLng] = useState(intToCoord(missionItemData.y));
-  const [lngError, setLngError] = useState(null);
+    const [tempAltitude, setTempAltitude] = useState(missionItemData.z ?? 0);
+    const [tempLat, setTempLat] = useState(intToCoord(missionItemData.x));
+    const [latError, setLatError] = useState(null);
+    const [tempLng, setTempLng] = useState(intToCoord(missionItemData.y));
+    const [lngError, setLngError] = useState(null);
 
-  // Keep local input values in sync with latest missionItemData (from marker drag)
-  useEffect(() => {
-    setTempAltitude(missionItemData.z ?? 0);
-    setTempLat(intToCoord(missionItemData.x));
-    setTempLng(intToCoord(missionItemData.y));
-  }, [missionItemData.z, missionItemData.x, missionItemData.y]);
+    // Keep local input values in sync with latest missionItemData (from marker drag)
+    useEffect(() => {
+      setTempAltitude(missionItemData.z ?? 0);
+      setTempLat(intToCoord(missionItemData.x));
+      setTempLng(intToCoord(missionItemData.y));
+    }, [missionItemData.z, missionItemData.x, missionItemData.y]);
 
-  return (
-    <div className="bg-falcongrey rounded p-1 flex flex-col gap-1">
-      {altitude && (
-        <div className="flex items-center gap-2">
-          <span>Altitude:</span>
-          <NumberInput
-            value={tempAltitude}
-            onChange={setTempAltitude}
-            onBlur={() => {
-              if (typeof tempAltitude === "number" && !isNaN(tempAltitude)) {
-                updateMissionItemData("z", tempAltitude);
-              }
-            }}
-            hideControls
-            size="s"
-            rightSection={<p className="text-black pr-1">m</p>}
-            classNames={{
-              input: "!bg-white !text-black !pl-1",
-            }}
-            className="ml-auto w-[150px]"
-          />
-        </div>
-      )}
-
-      {coordinates && (
-        <>
+    return (
+      <div className="bg-falcongrey rounded p-1 flex flex-col gap-1">
+        
+        {altitude && (
           <div className="flex items-center gap-2">
-            <span>Lat:</span>
+            <span>Altitude:</span>
             <NumberInput
-              value={tempLat}
-              onChange={(val) => {
-                setTempLat(val);
-                setLatError(val < -90 || val > 90 ? "Limit: -90 to 90" : null);
-              }}
+              value={tempAltitude}
+              onChange={setTempAltitude}
               onBlur={() => {
-                if (!latError && typeof tempLat === "number" && !isNaN(tempLat)) {
-                  updateMissionItemData("x", coordToInt(tempLat));
+                if (typeof tempAltitude === "number" && !isNaN(tempAltitude)) {
+                  updateMissionItemData("z", tempAltitude);
                 }
               }}
-              min={-90}
-              max={90}
-              error={latError}
               hideControls
               size="s"
-              rightSection={<p className="text-black pr-1">°</p>}
+              rightSection={<p className="text-black pr-1">m</p>}
               classNames={{
                 input: "!bg-white !text-black !pl-1",
               }}
               className="ml-auto w-[150px]"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span>Lng:</span>
-            <NumberInput
-              value={tempLng}
-              onChange={(val) => {
-                setTempLng(val);
-                setLngError(val < -180 || val > 180 ? "Limit: -180 to 180" : null);
-              }}
-              onBlur={() => {
-                if (!lngError && typeof tempLng === "number" && !isNaN(tempLng)) {
-                  updateMissionItemData("y", coordToInt(tempLng));
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.target.blur(); // triggers onBlur and closes editing
                 }
               }}
-              min={-180}
-              max={180}
-              error={lngError}
-              hideControls
-              size="s"
-              rightSection={<p className="text-black pr-1">°</p>}
-              classNames={{
-                input: "!bg-white !text-black !pl-1",
-              }}
-              className="ml-auto w-[150px]"
             />
           </div>
-        </>
-      )}
-    </div>
-  );
-}
+        )}
+
+        {coordinates && (
+          <>
+            <div className="flex items-center gap-2">
+              <span>Lat:</span>
+              <NumberInput
+                value={tempLat}
+                onChange={(val) => {
+                  setTempLat(val);
+                  setLatError(val < -90 || val > 90 ? "Limit: -90 to 90" : null);
+                }}
+                onBlur={() => {
+                  if (!latError && typeof tempLat === "number" && !isNaN(tempLat)) {
+                    updateMissionItemData("x", coordToInt(tempLat));
+                  }
+                }}
+                min={-90}
+                max={90}
+                error={latError}
+                hideControls
+                size="s"
+                rightSection={<p className="text-black pr-1">°</p>}
+                classNames={{
+                  input: "!bg-white !text-black !pl-1",
+                }}
+                className="ml-auto w-[150px]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.target.blur(); // triggers onBlur and closes editing
+                  }
+                }}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span>Lng:</span>
+              <NumberInput
+                value={tempLng}
+                onChange={(val) => {
+                  setTempLng(val);
+                  setLngError(val < -180 || val > 180 ? "Limit: -180 to 180" : null);
+                }}
+                onBlur={() => {
+                  if (!lngError && typeof tempLng === "number" && !isNaN(tempLng)) {
+                    updateMissionItemData("y", coordToInt(tempLng));
+                  }
+                }}
+                min={-180}
+                max={180}
+                error={lngError}
+                hideControls
+                size="s"
+                rightSection={<p className="text-black pr-1">°</p>}
+                classNames={{
+                  input: "!bg-white !text-black !pl-1",
+                }}
+                className="ml-auto w-[150px]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.target.blur(); // triggers onBlur and closes editing
+                  }
+                }}
+              />
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   function SettingsHamberger() {
     return (
@@ -237,6 +252,11 @@ function InformationBox({ command }) {
                 onChange={(val) => updateMissionItemData("param1", val)}
                 hideControls
                 className="w-[150px]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.target.blur(); // triggers onBlur and closes editing
+                  }
+                }}
               />
             </div>
 
@@ -247,6 +267,11 @@ function InformationBox({ command }) {
                 onChange={(val) => updateMissionItemData("param2", val)}
                 hideControls
                 className="w-[150px]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.target.blur(); // triggers onBlur and closes editing
+                  }
+                }}
               />
             </div>
 
@@ -257,6 +282,11 @@ function InformationBox({ command }) {
                 onChange={(val) => updateMissionItemData("param3", val)}
                 hideControls
                 className="w-[150px]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.target.blur(); // triggers onBlur and closes editing
+                  }
+                }}
               />
             </div>
 
@@ -267,6 +297,11 @@ function InformationBox({ command }) {
                 onChange={(val) => updateMissionItemData("param4", val)}
                 hideControls
                 className="w-[150px]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.target.blur(); // triggers onBlur and closes editing
+                  }
+                }}
               />
             </div>
 
@@ -277,6 +312,11 @@ function InformationBox({ command }) {
                 onChange={(val) => updateMissionItemData("x", coordToInt(val))}
                 hideControls
                 className="w-[150px]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.target.blur(); // triggers onBlur and closes editing
+                  }
+                }}
               />
             </div>
 
@@ -287,6 +327,11 @@ function InformationBox({ command }) {
                 onChange={(val) => updateMissionItemData("y", coordToInt(val))}
                 hideControls
                 className="w-[150px]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.target.blur(); // triggers onBlur and closes editing
+                  }
+                }}
               />
             </div>
 
@@ -297,6 +342,11 @@ function InformationBox({ command }) {
                 onChange={(val) => updateMissionItemData("z", val)}
                 hideControls
                 className="w-[150px]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.target.blur(); // triggers onBlur and closes editing
+                  }
+                }}
               />
             </div>
 
@@ -335,7 +385,6 @@ function InformationBox({ command }) {
       className="m-[5px] p-[8px] rounded bg-falcongrey-TRANSLUCENT"
       onClick={() => handleItemClick(missionItemData.seq)}
     >
-
       {openItemId === missionItemData.seq ? (
         <>
           <div className="flex">
@@ -383,7 +432,6 @@ function InformationBox({ command }) {
           <div>{getCommandLabelById(missionItemData.command)}</div>
         </div>
       )}
-
     </div>
   </>
   )

@@ -36,10 +36,6 @@ import {
   emitGetHomePosition,
   selectConnectedToDrone,
 } from "./redux/slices/droneConnectionSlice"
-
-// Tailwind styling
-import resolveConfig from "tailwindcss/resolveConfig"
-import tailwindConfig from "../tailwind.config"
 import {
   appendDrawingFenceItem,
   appendDrawingMissionItem,
@@ -60,6 +56,8 @@ import {
   selectDrawingRallyItems,
   selectHomePosition,
   selectMissionProgressData,
+  selectTakeoffAdded,
+  setTakeoffAdded,
   selectMissionProgressModal,
   selectTargetInfo,
   selectUnwrittenChanges,
@@ -76,6 +74,10 @@ import {
   updateDrawingRallyItem,
 } from "./redux/slices/missionSlice"
 import { queueErrorNotification } from "./redux/slices/notificationSlice"
+
+// Tailwind styling
+import resolveConfig from "tailwindcss/resolveConfig"
+import tailwindConfig from "../tailwind.config"
 const tailwindColors = resolveConfig(tailwindConfig).theme.colors
 
 const coordsFractionDigits = 7
@@ -112,8 +114,9 @@ export default function Missions() {
   const unwrittenChanges = useSelector(selectUnwrittenChanges)
   const missionProgressModalOpened = useSelector(selectMissionProgressModal)
   const missionProgressModalData = useSelector(selectMissionProgressData)
+  const takeoffAdded = useSelector(selectTakeoffAdded)
 
-  const [takeoffAdded, setTakeoffAdded] = useState(false);
+  // const [takeoffAdded, setTakeoffAdded] = useState(false);
   const [rtlAdded, setRtlAdded] = useState(false);
 
   // Need to keep a reference to the active tab to avoid stale closures
@@ -140,13 +143,13 @@ export default function Missions() {
   const [selectedOption, setSelectedOption] = useState('waypoint') // to check for which command to add marker.
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false)
 
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
   // Send some messages when file is loaded
   useEffect(() => {
     dispatch(emitGetHomePosition())
     dispatch(emitGetTargetInfo())
-    console.log(missionItems)
-    const hasTakeoff = missionItems.some(item => item.command === 22);
-    setTakeoffAdded(hasTakeoff);
   }, [currentPage])
 
   useEffect(() => {
@@ -159,8 +162,10 @@ export default function Missions() {
     activeTabRef.current = activeTab
   }, [activeTab])
 
-  const [open, setOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  useEffect(() => {
+    const hasTakeoff = missionItems.some(item => item.command === 22);
+    dispatch(setTakeoffAdded(hasTakeoff));
+  }, [missionItems])
 
   // Close menu if clicked outside
   useEffect(() => {
@@ -296,7 +301,7 @@ export default function Missions() {
         newItem.y = (takeoffLon)
         newItem.z = newMissionItemAltitude
         dispatch(appendDrawingMissionItem(newItem))
-        setTakeoffAdded(true)
+        dispatch(setTakeoffAdded(true))
         setSelectedOption('waypoint')
       }
       else if (type === "waypoint") {
@@ -314,13 +319,21 @@ export default function Missions() {
         dispatch(appendDrawingMissionItem(newItem))
       }
       else if (type === "return_to_launch") {
+        const homeLat = homePosition?.lat ?? 0;
+        const homeLon = homePosition?.lon ?? 0;
+
+        if (!isFinite(homeLat) || !isFinite(homeLon)) {
+          console.error("Invalid home position for RTL");
+          return;
+        }
+
         newItem.command = 20 // MAV_CMD_NAV_RETURN_TO_LAUNCH
-        newItem.x = (homePosition.lat)
-        newItem.y = (homePosition.lon)
+        newItem.x = homeLat
+        newItem.y = homeLon
         newItem.z = 0
         dispatch(appendDrawingMissionItem(newItem))
         setRtlAdded(true);
-        lockedMapInteractions ? null : dispatch(toggleMapLock());
+        if (!lockedMapInteractions) dispatch(toggleMapLock());
       }
       dispatch(setUnwrittenChanges({ ...unwrittenChanges, mission: true }))
     }
@@ -623,7 +636,7 @@ export default function Missions() {
     if (activeTabRef.current === "mission") {
       // Clear all mission items except the first if the first is a home position
       // dispatch(setDrawingMissionItems([]))
-      setTakeoffAdded(false)
+      dispatch(setTakeoffAdded(false))
       setRtlAdded(false);
       if (
         missionItems.length > 0 &&
@@ -751,10 +764,8 @@ export default function Missions() {
 
         {/* Left Sidebar */}
         <Sidebar
-          setRtlAdded={setRtlAdded}
           rtlAdded={rtlAdded}
-          takeoffAdded={takeoffAdded}
-          setTakeoffAdded={setTakeoffAdded}
+          setRtlAdded={setRtlAdded}
           addNewMissionItem={addNewMissionItem}
           toggleMapLock={toggleMapLock}
           dispatch={dispatch}
@@ -834,7 +845,7 @@ export default function Missions() {
             </Tabs.Panel>
           </Tabs>
         </div> : <div
-          className="absolute w-[250px] bg-falcongrey-TRANSLUCENT top-0 right-0 text-center cursor-pointer py-2 text-sm hover:bg-falcongrey-700"
+          className="absolute w-[250px] bg-falcongrey-TRANSLUCENT top-0 right-0 text-center cursor-pointer py-2 text-sm hover:bg-falcongrey-700 rounded"
           onClick={() => setIsRightSidebarOpen(true)}>
           Mission &nbsp;▼</div>
         }
