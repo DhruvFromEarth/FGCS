@@ -28,7 +28,7 @@ import { selectAircraftType } from "../../redux/slices/droneInfoSlice"
 
 const coordsFractionDigits = 9
 
-// for Information box
+// for Information box - we will have to define which commands require which options in Information box
 const commandsHavingAltitude = ['TAKEOFF', 'RETURN_TO_LAUNCH', 'LAND', 'WAYPOINT'];
 const commandsHavingCoordinates = ['TAKEOFF', 'RETURN_TO_LAUNCH', 'LAND', 'WAYPOINT'];
 

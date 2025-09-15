@@ -120,7 +120,7 @@ export default function Missions() {
   const [rtlAdded, setRtlAdded] = useState(false);
 
   // Need to keep a reference to the active tab to avoid stale closures
-  const activeTabRef = useRef(activeTab)
+  const activeTabRef = useRef("mission")
 
   // File import handling
   const [importFile, setImportFile] = useState(null)
@@ -481,6 +481,7 @@ export default function Missions() {
   }
 
   function writeMissionToDrone() {
+    console.log("Mission items:", missionItems)
     if (activeTabRef.current === "mission") {
       dispatch(emitWriteCurrentMission({ type: "mission", items: missionItems }))
     } else if (activeTabRef.current === "fence") {
@@ -783,6 +784,9 @@ export default function Missions() {
           setZoomTarget={handleZoomTarget}
           setSelectedOption={setSelectedOption}
         />
+
+        {/* Mission stats overlay */}
+        <MissionStatistics/>
 
         {/* Map area */}
         <div className="flex-1 relative">

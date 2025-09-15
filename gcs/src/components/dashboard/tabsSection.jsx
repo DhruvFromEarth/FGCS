@@ -7,7 +7,7 @@
 import { Tabs } from "@mantine/core"
 
 // Tab Components
-import CameraTabsSection from "./tabsSectionTabs/cameraTabsSection"
+// import CameraTabsSection from "./tabsSectionTabs/cameraTabsSection"
 import ActionTabsSection from "./tabsSectionTabs/actionTabsSection"
 import MissionTabsSection from "./tabsSectionTabs/missionTabsSection"
 import DataTabsSection from "./tabsSectionTabs/dataTabsSection"
@@ -25,7 +25,7 @@ export default function TabsSection({ currentFlightModeNumber }) {
   const connected = useSelector(selectConnectedToDrone)
   const aircraftType = useSelector(selectAircraftType)
   const navControllerOutputData = useSelector(selectNavController)
-  const tabPadding = "pt-6 pb-4"
+  const tabPadding = "pt-6 pb-4" // removed it's use to prevent re-rendering
 
   return (
     <Tabs defaultValue="data">
@@ -33,35 +33,27 @@ export default function TabsSection({ currentFlightModeNumber }) {
         <Tabs.Tab value="data">Data</Tabs.Tab>
         <Tabs.Tab value="actions">Actions</Tabs.Tab>
         <Tabs.Tab value="mission">Mission</Tabs.Tab>
-        <Tabs.Tab value="camera">Camera</Tabs.Tab>
+        {/* <Tabs.Tab value="camera">Camera</Tabs.Tab> */}
         <Tabs.Tab value="preFlightChecklist">Pre-Flight Checklist</Tabs.Tab>
       </Tabs.List>
 
-      {/* Data */}
-      <DataTabsSection tabPadding={tabPadding} />
-
-      {/* Actions */}
+      {/* Tab Panels */}
+      <DataTabsSection tabPadding="pt-6 pb-4" />
       <ActionTabsSection
         connected={connected}
-        tabPadding={tabPadding}
+        tabPadding="pt-6 pb-4"
         currentFlightModeNumber={currentFlightModeNumber}
         aircraftType={aircraftType}
-      ></ActionTabsSection>
-
-      {/* Mission */}
+      />
       <MissionTabsSection
         connected={connected}
-        tabPadding={tabPadding}
+        tabPadding="pt-6 pb-4"
         navControllerOutputData={navControllerOutputData}
         currentFlightModeNumber={currentFlightModeNumber}
         aircraftType={aircraftType}
       />
-
-      {/* Camera */}
-      <CameraTabsSection tabPadding={tabPadding} />
-
-      {/* Pre Flight Checklist */}
-      <PreFlightChecklistTab tabPadding={tabPadding} />
+      {/* <CameraTabsSection tabPadding="pt-6 pb-4" /> */}
+      <PreFlightChecklistTab tabPadding="pt-6 pb-4" />
     </Tabs>
   )
 }

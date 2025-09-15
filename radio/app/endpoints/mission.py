@@ -119,12 +119,13 @@ def getCurrentMissionAll() -> None:
 def writeCurrentMission(data: WriteCurrentMissionType) -> None:
     """
     Writes the current mission to the drone, only works if missions screen is loaded.
+    TODO: change this for only missions page.
     """
-    if droneStatus.state != "missions":
+    if droneStatus.state not in ["missions", "dashboard"]:
         socketio.emit(
             "params_error",
             {
-                "message": "You must be on the missions screen to write the current mission."
+                "message": "You must be on the dashboard or missions screen to write the current mission."
             },
         )
         logger.debug(f"Current state: {droneStatus.state}")

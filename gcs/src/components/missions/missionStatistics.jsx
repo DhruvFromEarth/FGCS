@@ -3,9 +3,12 @@
   about the mission on the missions screen.
 */
 
-import { Tooltip } from "@mantine/core"
+import { Tooltip, Divider } from "@mantine/core"
+import { IconInfoCircle } from "@tabler/icons-react"
 import { distance } from "@turf/turf"
 import { useEffect, useState } from "react"
+
+// Helpers
 import { intToCoord } from "../../helpers/dataFormatters"
 import {
   filterMissionItems,
@@ -14,21 +17,20 @@ import {
 
 // Redux
 import { useSelector } from "react-redux"
-import { selectDrawingMissionItems } from "../../redux/slices/missionSlice"
+import {
+  selectDrawingMissionItems,
+  selectHomePosition,
+} from "../../redux/slices/missionSlice"
 
 function calculateMaxAltitude(missionItems) {
-  missionItems = missionItems.filter(
-    (item) => isGlobalFrameHomeCommand(item) === false,
-  )
-
+  missionItems = missionItems.filter((item) => !isGlobalFrameHomeCommand(item))
   return Math.max(...missionItems.map((item) => item.z || 0), 0)
 }
 
 function calculateMaxDistanceBetweenWaypoints(missionItems) {
-  missionItems = missionItems.filter(
-    (item) => isGlobalFrameHomeCommand(item) === false,
-  )
+  missionItems = missionItems.filter((item) => !isGlobalFrameHomeCommand(item))
   if (missionItems.length < 2) return 0
+
   let maxDistance = 0
   let maxDistancePoints = []
 
@@ -41,9 +43,7 @@ function calculateMaxDistanceBetweenWaypoints(missionItems) {
     const distanceBetweenPoints = distance(
       [intToCoord(item1.y), intToCoord(item1.x)],
       [intToCoord(item2.y), intToCoord(item2.x)],
-      {
-        units: "meters",
-      },
+      { units: "meters" },
     )
     if (distanceBetweenPoints > maxDistance) {
       maxDistance = distanceBetweenPoints
@@ -51,25 +51,24 @@ function calculateMaxDistanceBetweenWaypoints(missionItems) {
     }
   }
 
-  // distance to 2dp
-  maxDistance = Math.round(maxDistance * 100) / 100
-
-  return { maxDistance: maxDistance, points: maxDistancePoints }
+  return {
+    maxDistance: Math.round(maxDistance * 100) / 100,
+    points: maxDistancePoints,
+  }
 }
 
 function calculateMaxSlopeGradient(missionItems) {
   const homeCommand = isGlobalFrameHomeCommand(missionItems[0])
     ? missionItems[0]
     : null
-  if (homeCommand) {
-    missionItems = missionItems.slice(1) // Remove home command if it exists
-  }
+
+  if (homeCommand) missionItems = missionItems.slice(1)
 
   if (missionItems.length < 2) return 0
+
   let maxGradient = 0
   let maxDistancePoints = []
 
-  // If the first command is a takeoff command, use the coordinates from the home location
   if (homeCommand && missionItems[0].command === 22) {
     missionItems[0].x = homeCommand.x
     missionItems[0].y = homeCommand.y
@@ -87,20 +86,19 @@ function calculateMaxSlopeGradient(missionItems) {
       [intToCoord(item2.y), intToCoord(item2.x)],
       { units: "meters" },
     )
+    if (horizontalDistance === 0) continue
 
-    if (horizontalDistance === 0) continue // Avoid division by zero
-
-    const gradient = (verticalDistance / horizontalDistance) * 100 // Convert to percentage
-
+    const gradient = (verticalDistance / horizontalDistance) * 100
     if (gradient > maxGradient) {
       maxGradient = gradient
       maxDistancePoints = [item1, item2]
     }
   }
 
-  maxGradient = Math.round(maxGradient * 100) / 100 // Round to two decimal places
-
-  return { maxGradient: maxGradient, points: maxDistancePoints }
+  return {
+    maxGradient: Math.round(maxGradient * 100) / 100,
+    points: maxDistancePoints,
+  }
 }
 
 function calculateTotalDistance(missionItems) {
@@ -120,7 +118,6 @@ function calculateTotalDistance(missionItems) {
 
       // Find the waypoint with the seq value equal to jumpTo
       const jumpWaypoint = missionItems.find((wp) => wp.seq === jumpTo)
-
       if (jumpWaypoint) {
         // Calculate the distance from the jumpWaypoint to the current waypoint
         // times the number of jumps
@@ -151,6 +148,7 @@ function calculateTotalDistance(missionItems) {
         { units: "meters" },
       )
     }
+
     lastPoint = item
   }
 
@@ -174,6 +172,8 @@ function StatisticItem({ label, value, units, tooltip = null }) {
 
 export default function MissionStatistics() {
   const missionItems = useSelector(selectDrawingMissionItems)
+  const homePosition = useSelector(selectHomePosition)
+  const coordsFractionDigits = 6
 
   const [filteredMissionItems, setFilteredMissionItems] = useState([])
   const [totalDistance, setTotalDistance] = useState(0)
@@ -208,33 +208,55 @@ export default function MissionStatistics() {
   }, [filteredMissionItems])
 
   return (
-    <>
-      <StatisticItem label="Total distance" value={totalDistance} units="m" />
-      <StatisticItem
-        label="Max distance between waypoints"
-        value={maxDistanceBetweenWaypoints.maxDistance}
-        tooltip={
-          maxDistanceBetweenWaypoints.points?.[0]?.seq !== undefined &&
+    <div className="absolute bottom-0 bg-falcongrey-TRANSLUCENT p-4 text-sm rounded z-50">
+      <div className="flex flex-col gap-2 mb-2">
+        <p className="font-bold">
+          Home location{" "}
+          <span className="inline-block align-middle">
+            <Tooltip
+              label="The home location is written to a mission save file."
+              withArrow
+            >
+              <IconInfoCircle size={18} />
+            </Tooltip>
+          </span>
+        </p>
+        <p>
+          Lat: {homePosition?.lat ? intToCoord(homePosition.lat).toFixed(coordsFractionDigits) : "N/A"}
+        </p>
+        <p>
+          Lon: {homePosition?.lon ? intToCoord(homePosition.lon).toFixed(coordsFractionDigits) : "N/A"}
+        </p>
+      </div>
+
+      <Divider className="my-1" />
+
+      <div className="flex flex-col gap-2 mt-2">
+        <StatisticItem label="Total distance" value={totalDistance} units="m" />
+        <StatisticItem
+          label="Max distance between waypoints"
+          value={maxDistanceBetweenWaypoints.maxDistance}
+          tooltip={
+            maxDistanceBetweenWaypoints.points?.[0]?.seq !== undefined &&
             maxDistanceBetweenWaypoints.points?.[1]?.seq !== undefined
-            ? `Between ${maxDistanceBetweenWaypoints.points[0].seq} and ${maxDistanceBetweenWaypoints.points[1].seq}`
-            : "Between 0 and 0"
-        }
-
-        units="m"
-      />
-      <StatisticItem label="Max altitude" value={maxAltitude} units="m" />
-      <StatisticItem
-        label="Max slope gradient"
-        value={maxSlopeGradient.maxGradient}
-        tooltip={
-          maxSlopeGradient.points?.[0]?.seq !== undefined &&
+              ? `Between ${maxDistanceBetweenWaypoints.points[0].seq} and ${maxDistanceBetweenWaypoints.points[1].seq}`
+              : "Between 0 and 0"
+          }
+          units="m"
+        />
+        <StatisticItem label="Max altitude" value={maxAltitude} units="m" />
+        <StatisticItem
+          label="Max slope gradient"
+          value={maxSlopeGradient.maxGradient}
+          tooltip={
+            maxSlopeGradient.points?.[0]?.seq !== undefined &&
             maxSlopeGradient.points?.[1]?.seq !== undefined
-            ? `Between ${maxSlopeGradient.points[0].seq} and ${maxSlopeGradient.points[1].seq}`
-            : "Between 0 and 0"
-        }
-
-        units="%"
-      />
-    </>
+              ? `Between ${maxSlopeGradient.points[0].seq} and ${maxSlopeGradient.points[1].seq}`
+              : "Between 0 and 0"
+          }
+          units="%"
+        />
+      </div>
+    </div>
   )
 }
