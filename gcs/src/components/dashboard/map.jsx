@@ -71,6 +71,11 @@ function MapSectionNonMemo({ passedRef, onDragstart, mapId = "dashboard" }) {
   const heading = gpsData.hdg ? gpsData.hdg / 100 : 0
   const desiredBearing = navControllerOutputData.navBearing
 
+  const [initialCoords] = useState({
+    lat: gpsData.lat,
+    lon: gpsData.lon,
+  });
+
   const [connected] = useSessionStorage({
     key: "connectedToDrone",
     defaultValue: false,
@@ -152,8 +157,21 @@ function MapSectionNonMemo({ passedRef, onDragstart, mapId = "dashboard" }) {
   }, [data])
 
   useEffect(() => {
-    setFilteredMissionItems(filterMissionItems(missionItems.mission_items))
-  }, [missionItems])
+    // Return to launch (RTL) doesn't have any co-ordinates, 
+    // putting initial drone co-ordinates in RTL.
+    const droneCoordinatesInRTL = missionItems.mission_items.map((item) => {
+      if (item.command === 20) {
+        return {
+          ...item,
+          x: initialCoords.lat,
+          y: initialCoords.lon,
+        };
+      }
+      return item;
+    });
+    setFilteredMissionItems(filterMissionItems(droneCoordinatesInRTL));
+  }, [missionItems]);
+
 
   useEffect(() => {
     if (contextMenuRef.current) {
@@ -251,7 +269,7 @@ function MapSectionNonMemo({ passedRef, onDragstart, mapId = "dashboard" }) {
             zoom: newViewState.viewState.zoom,
           })
         }
-        onDragStart={onDragstart}
+        onDragStart={onDragstart} // Not in use
         onContextMenu={(e) => {
           e.preventDefault()
           setClicked(true)
@@ -347,8 +365,10 @@ function MapSectionNonMemo({ passedRef, onDragstart, mapId = "dashboard" }) {
                 intToCoord(filteredMissionItems[0].x),
               ]
             }
+            editable={false}
           />
         )}
+        {/* {console.log(homePosition,filteredMissionItems)} */}
 
         <Modal opened={opened} onClose={close} title="Enter altitude" centered>
           <form

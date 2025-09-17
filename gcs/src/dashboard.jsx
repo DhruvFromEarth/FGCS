@@ -188,7 +188,7 @@ export default function Dashboard() {
         </ResizableInfoBox>
 
         {/* Status Bar */}
-        <StatusBar className="absolute top-0 right-0">
+        <StatusBar className="absolute top-0 right-0 z-20">
           <StatusSection
             icon={<IconRadar />}
             value={GPS_FIX_TYPES[fixType]}

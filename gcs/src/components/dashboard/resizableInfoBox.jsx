@@ -13,7 +13,7 @@ import GetOutsideVisibilityColor from "../../helpers/outsideVisibility"
 export default function ResizableInfoBox(props) {
   return (
     <div
-      className="absolute top-0 left-0 h-full z-10"
+      className="absolute top-0 left-0 h-full z-30"
       style={{ backgroundColor: GetOutsideVisibilityColor() }}
     >
       <ResizableBox

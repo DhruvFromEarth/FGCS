@@ -808,7 +808,7 @@ export default function Missions() {
 
         {/* Right Sidebar */}
         {isRightSidebarOpen ? <div
-          className="absolute bg-falcongrey/20 top-0 right-0 bottom-0 w-[250px] overflow-y-auto" //bg-falconred-500
+          className="absolute bg-falcongrey/20 top-0 right-0 bottom-0 w-[250px] overflow-y-auto z-50" //bg-falconred-500
         >
           <Tabs
             value={activeTab}
@@ -849,7 +849,7 @@ export default function Missions() {
             </Tabs.Panel>
           </Tabs>
         </div> : <div
-          className="absolute w-[250px] bg-falcongrey-TRANSLUCENT top-0 right-0 text-center cursor-pointer py-2 text-sm hover:bg-falcongrey-700 rounded"
+          className="absolute w-[250px] bg-falcongrey-TRANSLUCENT top-0 right-0 text-center cursor-pointer py-2 text-sm hover:bg-falcongrey-700 rounded z-50"
           onClick={() => setIsRightSidebarOpen(true)}>
           Mission &nbsp;▼</div>
         }

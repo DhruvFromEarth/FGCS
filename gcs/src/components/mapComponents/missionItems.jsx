@@ -25,7 +25,7 @@ const tailwindColors = resolveConfig(tailwindConfig).theme.colors
 export default function MissionItems({
   missionItems,
   editable = false,
-  dragEndCallback = () => {},
+  dragEndCallback = () => { },
 }) {
   const [filteredMissionItems, setFilteredMissionItems] = useState(
     filterMissionItems(missionItems),
@@ -33,8 +33,20 @@ export default function MissionItems({
   const [listOfLineCoords, setListOfLineCoords] = useState([])
   const [listOfDottedLineCoords, setListOfDottedLineCoords] = useState([])
 
+  // Patch RTL items to use home coordinates if available
+  const patchedMissionItems = missionItems.map((item) => {
+    if (item.command === 20  && missionItems[0]?.x && missionItems[0]?.y) {
+      return {
+        ...item,
+        x: missionItems[0].x,
+        y: missionItems[0].y,
+      }
+    }
+    return item
+  })
+
   useEffect(() => {
-    setFilteredMissionItems(filterMissionItems(missionItems))
+    setFilteredMissionItems(filterMissionItems(patchedMissionItems))
   }, [missionItems])
 
   useEffect(() => {
@@ -51,23 +63,23 @@ export default function MissionItems({
     const lineCoordsList = []
     const dottedLineCoordsList = []
 
-    // Stop processing waypoints after a land command
-    const landCommandIndex = filteredMissionItems.findIndex((item) =>
-      [21, 189].includes(item.command),
+    // Stop processing waypoints after a land or return to launch command
+    const landCommandIndex = patchedMissionItems.findIndex((item) =>
+      [20, 21, 189].includes(item.command),
     )
     const itemsToProcess =
       landCommandIndex === -1
-        ? filteredMissionItems
-        : filteredMissionItems.slice(0, landCommandIndex + 1)
+        ? patchedMissionItems
+        : patchedMissionItems.slice(0, landCommandIndex + 1)
 
     itemsToProcess.forEach((item) => {
       lineCoordsList.push([intToCoord(item.y), intToCoord(item.x)])
     })
 
-    // Join the last item to first item if aircraft does not land, with a
-    // dotted line
+    // Join the last item to first item if aircraft does not land or 
+    // return to launch, with a dotted line
     if (
-      ![21, 189].includes(
+      ![20, 21, 189].includes(
         itemsToProcess[itemsToProcess.length - 1].command, // Use itemsToProcess here
       )
     ) {
@@ -82,7 +94,7 @@ export default function MissionItems({
     }
 
     // Connect jump commands to previously displayed item and jump target item
-    const jumpCommandItems = missionItems.filter((item) => item.command === 177)
+    const jumpCommandItems = patchedMissionItems.filter((item) => item.command === 177)
     jumpCommandItems.forEach((jumpItem) => {
       const nextItem = filteredMissionItems.find((item) => {
         return item.seq === jumpItem.param1
@@ -99,7 +111,6 @@ export default function MissionItems({
       ])
       lineCoordsList.push([intToCoord(nextItem.y), intToCoord(nextItem.x)])
     })
-
     return { solid: lineCoordsList, dotted: dottedLineCoordsList }
   }
 

@@ -16,6 +16,7 @@ export default function HomeMarker({
   lon,
   updateMissionHomePositionDragCb,
   lineTo = null,
+  editable = true,
 }) {
   return (
     <>
@@ -26,7 +27,7 @@ export default function HomeMarker({
         text={"H"}
         showOnTop={true}
         zindex={20}
-        draggable={true}
+        draggable={editable}
         dragEndCallback={updateMissionHomePositionDragCb}
       />
       {lineTo !== null && (
