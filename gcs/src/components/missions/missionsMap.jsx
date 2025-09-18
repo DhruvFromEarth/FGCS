@@ -123,7 +123,6 @@ function MapSectionNonMemo({
 
   const clipboard = useClipboard({ timeout: 500 })
 
-  // const [missionDrawMode, setMissionDrawMode] = useState(false)
   const [polygonDrawMode, setPolygonDrawMode] = useState(false)
   const [polygonPoints, setPolygonPoints] = useState([])
 

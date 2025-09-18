@@ -7,7 +7,6 @@
 import { Tabs } from "@mantine/core"
 
 // Tab Components
-// import CameraTabsSection from "./tabsSectionTabs/cameraTabsSection"
 import ActionTabsSection from "./tabsSectionTabs/actionTabsSection"
 import MissionTabsSection from "./tabsSectionTabs/missionTabsSection"
 import DataTabsSection from "./tabsSectionTabs/dataTabsSection"
@@ -25,7 +24,6 @@ export default function TabsSection({ currentFlightModeNumber }) {
   const connected = useSelector(selectConnectedToDrone)
   const aircraftType = useSelector(selectAircraftType)
   const navControllerOutputData = useSelector(selectNavController)
-  const tabPadding = "pt-6 pb-4" // removed it's use to prevent re-rendering
 
   return (
     <Tabs defaultValue="data">
@@ -39,12 +37,14 @@ export default function TabsSection({ currentFlightModeNumber }) {
 
       {/* Tab Panels */}
       <DataTabsSection tabPadding="pt-6 pb-4" />
+
       <ActionTabsSection
         connected={connected}
         tabPadding="pt-6 pb-4"
         currentFlightModeNumber={currentFlightModeNumber}
         aircraftType={aircraftType}
       />
+
       <MissionTabsSection
         connected={connected}
         tabPadding="pt-6 pb-4"
@@ -52,7 +52,9 @@ export default function TabsSection({ currentFlightModeNumber }) {
         currentFlightModeNumber={currentFlightModeNumber}
         aircraftType={aircraftType}
       />
+
       {/* <CameraTabsSection tabPadding="pt-6 pb-4" /> */}
+
       <PreFlightChecklistTab tabPadding="pt-6 pb-4" />
     </Tabs>
   )

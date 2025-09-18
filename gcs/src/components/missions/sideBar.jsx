@@ -10,7 +10,7 @@ import map_add_mission from '../img/map_add_mission.svg';
 import map_add_mission_black from '../img/map_add_mission_black.svg';
 import map_center_black from '../img/map_center_black.svg';
 import map_center from '../img/map_center.svg';
-import map_draw_shape from '../img/map_draw_shape.svg';
+// import map_draw_shape from '../img/map_draw_shape.svg';
 import map_sync_black from '../img/map_sync_black.svg';
 // import map_sync_changed from '../img/map_sync_changed.svg';
 import map_sync from '../img/map_sync.svg';
@@ -76,7 +76,6 @@ const SidebarButton = React.memo(function SidebarButton({
           // transition: 'all 0.2s ease',
         }}
       >
-        {/* <span>{icon}</span> */}
         <img
           src={icon}
           width='30px'
@@ -121,7 +120,6 @@ const FileMenu = ({
   setIsROISelected,
 }) => (
   <>
-    {/* TODO: fix this unwritten changes warning */}
     {(unwrittenChanges !== null) && <UnwrittenChangesWarning unwrittenChanges={unwrittenChanges} />}
 
     <Tooltip label={!connected ? 'Not connected to drone.' : 'Read Mission from drone'}>

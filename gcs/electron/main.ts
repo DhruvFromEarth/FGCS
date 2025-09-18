@@ -182,50 +182,6 @@ function closeWebcamPopout() {
 
 ipcMain.handle("openWebcamWindow", (_, videoStreamId, name, aspect, cameraType) => { openWebcamPopout(videoStreamId, name, aspect, cameraType) })
 ipcMain.handle("closeWebcamWindow", () => closeWebcamPopout())
-// ipcMain.handle("openrtspcamwindow", (_, streamId, streamName, streamAspect, cameraType) => {openrtspcamPopout(streamId, streamName, streamAspect, cameraType)})
-// ipcMain.handle("closertspcamwindow", () => closertspcamPopout())
-
-// function openrtspcamPopout(streamId: string, streamName: string, streamAspect: number, cameraType: string){
-
-//   if (webcamPopoutWin === null) return;
-//   loadWebcam(streamId, streamName, cameraType);
-
-//   webcamPopoutWin.setTitle(streamName);
-
-//   // Remove previous resize handler
-//   if (currentResizeHandler)
-//     webcamPopoutWin.off("will-resize", currentResizeHandler)
-
-//   // Create resize handler to maintain streamAspect ratio
-//   currentResizeHandler = function(event, newBounds){
-//     event.preventDefault();
-
-//     const newWidth = newBounds.width;
-//     const newHeight = Math.round((newWidth / streamAspect) + WEBCAM_TITLEBAR_HEIGHT);
-
-//     webcamPopoutWin?.setBounds({
-//       x: newBounds.x,
-//       y: newBounds.y,
-//       width: newWidth,
-//       height: newHeight
-//     });
-//   }
-
-//   webcamPopoutWin.on('will-resize', currentResizeHandler);
-
-//   // Ensure initial size fits the streamAspect ratio ()
-//   webcamPopoutWin.setSize(webcamPopoutWin.getBounds().width, Math.round(webcamPopoutWin.getBounds().width / streamAspect) + WEBCAM_TITLEBAR_HEIGHT);
-
-//   webcamPopoutWin.setMinimumSize(Math.round(streamAspect * (MIN_WEBCAM_HEIGHT-28)), MIN_WEBCAM_HEIGHT);
-//   webcamPopoutWin.show();
-
-// }
-
-// function closertspcamPopout(){
-//   webcamPopoutWin?.hide()
-//   loadWebcam();
-//   win?.webContents.send("webcam-closed");
-// }
 
 ipcMain.handle("isMac", () => { return process.platform == "darwin" })
 ipcMain.on('close', () => { closeWithBackend() })

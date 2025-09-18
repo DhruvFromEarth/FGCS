@@ -67,59 +67,56 @@ function MapSectionNonMemo({ passedRef, onDragstart, mapId = "dashboard" }) {
   const missionItems = useSelector(selectCurrentMissionItems)
   const homePosition = useSelector(selectHomePosition)
   const flightMode = useSelector(selectFlightModeString)
+
+  const { getSetting } = useSettings()
+  // Check if maps should be synchronized (from settings)
+  const syncMaps = getSetting("General.syncMapViews") || false
+
+  const { clicked, setClicked, points, setPoints } = useContextMenu()
+
+  const [opened, { open, close }] = useDisclosure(false)
+
+  const clipboard = useClipboard({ timeout: 500 })
+
   const data = gpsData
   const heading = gpsData.hdg ? gpsData.hdg / 100 : 0
   const desiredBearing = navControllerOutputData.navBearing
+  // Use either a shared key or a unique key based on the setting
+  const viewStateKey = syncMaps
+    ? "initialViewState"
+    : `initialViewState_${mapId}`
 
+  const contextMenuRef = useRef()
+  const [
+    contextMenuPositionCalculationInfo,
+    setContextMenuPositionCalculationInfo,
+  ] = useState()
   const [initialCoords] = useState({
     lat: gpsData.lat,
     lon: gpsData.lon,
   });
+  const [clickedGpsCoords, setClickedGpsCoords] = useState({ lng: 0, lat: 0 })
+  const [position, setPosition] = useState(null)
+  const [filteredMissionItems, setFilteredMissionItems] = useState([])
+  const [firstCenteredToDrone, setFirstCenteredToDrone] = useState(false)
 
   const [connected] = useSessionStorage({
     key: "connectedToDrone",
     defaultValue: false,
   })
-
-  const [position, setPosition] = useState(null)
-  const [firstCenteredToDrone, setFirstCenteredToDrone] = useState(false)
-  const { getSetting } = useSettings()
-
-  // Check if maps should be synchronized (from settings)
-  const syncMaps = getSetting("General.syncMapViews") || false
-
-  // Use either a shared key or a unique key based on the setting
-  const viewStateKey = syncMaps
-    ? "initialViewState"
-    : `initialViewState_${mapId}`
+  const [guidedModePinData, setGuidedModePinData] = useSessionStorage({
+    key: "guidedModePinData",
+    defaultValue: null,
+  })
 
   const [initialViewState, setInitialViewState] = useLocalStorage({
     key: viewStateKey,
     defaultValue: { latitude: 53.381655, longitude: -1.481434, zoom: 17 },
     getInitialValueInEffect: false,
   })
-
   const [repositionAltitude, setRepositionAltitude] = useLocalStorage({
     key: "repositionAltitude",
     defaultValue: 30,
-  })
-
-  const [filteredMissionItems, setFilteredMissionItems] = useState([])
-
-  const contextMenuRef = useRef()
-  const { clicked, setClicked, points, setPoints } = useContextMenu()
-  const [
-    contextMenuPositionCalculationInfo,
-    setContextMenuPositionCalculationInfo,
-  ] = useState()
-  const [clickedGpsCoords, setClickedGpsCoords] = useState({ lng: 0, lat: 0 })
-
-  const [opened, { open, close }] = useDisclosure(false)
-  const clipboard = useClipboard({ timeout: 500 })
-
-  const [guidedModePinData, setGuidedModePinData] = useSessionStorage({
-    key: "guidedModePinData",
-    defaultValue: null,
   })
 
   useEffect(() => {

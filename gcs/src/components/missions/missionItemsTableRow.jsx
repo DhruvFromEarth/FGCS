@@ -6,8 +6,6 @@ import {
   ActionIcon,
   NumberInput,
   Select,
-  TableTd,
-  TableTr,
   Modal,
 } from "@mantine/core"
 import { IconArrowDown, IconArrowUp, IconTrash, IconChevronDown } from "@tabler/icons-react"
@@ -28,7 +26,7 @@ import { selectAircraftType } from "../../redux/slices/droneInfoSlice"
 
 const coordsFractionDigits = 9
 
-// for Information box - we will have to define which commands require which options in Information box
+// TODO: For Information box - We will have to define which commands require which options in Information box
 const commandsHavingAltitude = ['TAKEOFF', 'RETURN_TO_LAUNCH', 'LAND', 'WAYPOINT'];
 const commandsHavingCoordinates = ['TAKEOFF', 'RETURN_TO_LAUNCH', 'LAND', 'WAYPOINT'];
 
@@ -41,6 +39,7 @@ export default function MissionItemsTableRow({
   handleItemClick,
 }) {
   const aircraftType = useSelector(selectAircraftType);
+
   const [missionItemData, setMissionItemData] = useState(missionItem);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 

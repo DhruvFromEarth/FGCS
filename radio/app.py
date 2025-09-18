@@ -4,8 +4,6 @@ from app import create_app, socketio
 from pathlib import Path
 from dotenv import load_dotenv
 from app.video_stream import register_stream_handlers
-# from app.video_stream import stream_rtsp
-# from threading import Thread
 
 app = create_app(debug=True)
 
@@ -26,11 +24,6 @@ if __name__ == "__main__":
 
     print("Starting backend.")
     print(host)
-
-    # def start_stream():
-    #     Thread(target=stream_rtsp, args=("rtsp://192.168.144.25:8554/main.264",), daemon=True).start()
-
-    # start_stream()
 
     socketio.run(app, allow_unsafe_werkzeug=True, host=host, port=port)
     if droneStatus.drone:

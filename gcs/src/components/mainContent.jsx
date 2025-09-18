@@ -1,6 +1,6 @@
 /*
-  The main wrapper for the app
-*/
+ *The main wrapper for the app
+ */
 
 import { Route, Routes, useLocation } from "react-router-dom"
 import { useEffect } from "react"

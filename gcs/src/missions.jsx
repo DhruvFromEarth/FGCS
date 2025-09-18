@@ -116,35 +116,33 @@ export default function Missions() {
   const missionProgressModalData = useSelector(selectMissionProgressData)
   const takeoffAdded = useSelector(selectTakeoffAdded)
 
-  // const [takeoffAdded, setTakeoffAdded] = useState(false);
-  const [rtlAdded, setRtlAdded] = useState(false);
-
   // Need to keep a reference to the active tab to avoid stale closures
   const activeTabRef = useRef("mission")
-
+  
   // File import handling
   const [importFile, setImportFile] = useState(null)
   const importFileResetRef = useRef(null)
-
+  
   // Modal for mission progress
   const [missionProgressModalTitle, setMissionProgressModalTitle] = useState(
     "Mission progress update",
   )
-
+  
   // Other states
-  const [showWarningBanner, setShowWarningBanner] = useSessionStorage({
-    key: "showWarningBanner",
-    defaultValue: true,
-  })
-  const [currentPage] = useSessionStorage({ key: "currentPage" })
-  const mapRef = useRef()
-  const newMissionItemAltitude = 30 // TODO: Make this configurable
+  const [open, setOpen] = useState(false);  // TODO: set this up
+  const [rtlAdded, setRtlAdded] = useState(false);
   const [zoomTarget, setZoomTarget] = useState(null);
   const [selectedOption, setSelectedOption] = useState('waypoint') // to check for which command to add marker.
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false)
 
-  const [open, setOpen] = useState(false);
+  const [currentPage] = useSessionStorage({ key: "currentPage" })
+  const [showWarningBanner, setShowWarningBanner] = useSessionStorage({
+    key: "showWarningBanner",
+    defaultValue: true,
+  })
+  const mapRef = useRef()
   const dropdownRef = useRef(null);
+  const newMissionItemAltitude = 30 // TODO: Make this configurable
 
   // Send some messages when file is loaded
   useEffect(() => {
@@ -153,9 +151,8 @@ export default function Missions() {
   }, [currentPage])
 
   useEffect(() => {
-    if (importFile) {
+    if (importFile)
       importMissionFromFile(importFile.path)
-    }
   }, [importFile])
 
   useEffect(() => {
@@ -222,6 +219,7 @@ export default function Missions() {
   }
 
   function addNewMissionItem(lat, lon, type = selectedOption) {
+    // TODO: Turn isValidCoord to isValidLatLon
     const isValidCoord = (val) =>
       typeof val === "number" && !isNaN(val)
 
@@ -281,7 +279,7 @@ export default function Missions() {
       mavpackettype: "MISSION_ITEM_INT",
     }
 
-    // checking for valid coordinates - also can be used for return_to_launch
+    // checking for valid coordinates
     if (activeTabRef.current === "mission") {
       const takeoffLat = isValidCoord(targetInfo.lat)
         ? targetInfo.lat
@@ -424,7 +422,7 @@ export default function Missions() {
         [activeTabRef.current]: true,
       }),
     )
-    setRtlAdded(false); // check if it was rtl
+    setRtlAdded(false);
   }
 
   function updateMissionItemOrder(missionItemId, indexIncrement) {
@@ -593,50 +591,11 @@ export default function Missions() {
       }
     });
 
-    // Also update the first waypoint if it is a home position waypoint
-    // if (missionItems.length > 0 && isGlobalFrameHomeCommand(missionItems[0])) {
-    // Check if the first item is a home position command
-    // const updatedMissionItems = [...missionItems]
-    // updatedMissionItems[0] = {
-    //   ...updatedMissionItems[0],
-    //   x: newHomePosition.lat,
-    //   y: newHomePosition.lon,
-    // }
-    // dispatch(setDrawingMissionItems(updatedMissionItems))
-    // } else {
-    // If the first item is not a home position command, add a new home position item
-    // const newHomeMissionItem = {
-    //   id: uuidv4(),
-    //   seq: 0,
-    //   x: newHomePosition.lat,
-    //   y: newHomePosition.lon,
-    //   z: 0.1,
-    //   frame: parseInt(
-    //     Object.keys(MAV_FRAME_LIST).find(
-    //       (key) => MAV_FRAME_LIST[key] === "MAV_FRAME_GLOBAL",
-    //     ),
-    //   ),
-    //   command: 16, // MAV_CMD_NAV_WAYPOINT
-    //   param1: 0,
-    //   param2: 0,
-    //   param3: 0,
-    //   param4: 0,
-    //   current: 0,
-    //   autocontinue: 1,
-    //   target_component: targetInfo.target_component,
-    //   target_system: targetInfo.target_system,
-    //   mission_type: 0,
-    //   mavpackettype: "MISSION_ITEM_INT",
-    // }
-    // dispatch(setDrawingMissionItems([newHomeMissionItem, ...missionItems]))
-
     dispatch(setUnwrittenChanges({ ...unwrittenChanges, mission: true }))
   }
 
   function clearMissionItems() {
     if (activeTabRef.current === "mission") {
-      // Clear all mission items except the first if the first is a home position
-      // dispatch(setDrawingMissionItems([]))
       dispatch(setTakeoffAdded(false))
       setRtlAdded(false);
       if (
