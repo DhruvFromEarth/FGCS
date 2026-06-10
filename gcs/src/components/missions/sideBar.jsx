@@ -146,14 +146,14 @@ const FileMenu = ({
   </>
 );
 
-const PatternMenu = ({ closeMenu }) => (
-  <>
-    <p>Create complex pattern:</p>
-    {["Survey", "Corridor Scan", "Structure Scan"].map((label) => (
-      <Button key={label} onClick={closeMenu} style={menuButtonBaseStyle}>{label}</Button>
-    ))}
-  </>
-);
+// const PatternMenu = ({ closeMenu }) => (
+//   <>
+//     <p>Create complex pattern:</p>
+//     {["Survey", "Corridor Scan", "Structure Scan"].map((label) => (
+//       <Button key={label} onClick={closeMenu} style={menuButtonBaseStyle}>{label}</Button>
+//     ))}
+//   </>
+// );
 
 const CenterMenu = ({ setZoomTarget, closeMenu }) => (
   <>
@@ -167,8 +167,8 @@ const CenterMenu = ({ setZoomTarget, closeMenu }) => (
 
 
 export default function Sidebar({
-  rtlAdded,
-  setRtlAdded,
+  // rtlAdded,
+  // setRtlAdded,
   addNewMissionItem,
   toggleMapLock,
   dispatch,

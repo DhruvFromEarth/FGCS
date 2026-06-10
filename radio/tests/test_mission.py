@@ -211,7 +211,7 @@ def test_writeCurrentMission_wrongState(
 
     assert socketio_result["name"] == "params_error"  # Correct name emitted
     assert socketio_result["args"][0] == {
-        "message": "You must be on the missions screen to write the current mission."
+        "message": "You must be on the dashboard or missions screen to write the current mission.."
     }
 
 

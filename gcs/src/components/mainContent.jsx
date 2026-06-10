@@ -35,8 +35,9 @@ import { initSocket } from "../redux/slices/socketSlice"
 
 export default function AppContent() {
   // Conditionally render UI so the webcam route is literally just a webcam
-    const popoutCondition = useLocation().pathname === "/webcam" || useLocation().pathname.toLowerCase().startsWith("/rtsp");
-
+  const pathname = location.pathname.toLowerCase();
+  const popoutCondition = pathname === "/webcam" || pathname.startsWith("/rtsp");
+  
   // Setup sockets for redux
   const dispatch = useDispatch()
   useEffect(() => {
@@ -46,32 +47,32 @@ export default function AppContent() {
   return (
     <SettingsProvider>
       <VideoStreamProvider>
-      <SingleRunWrapper>
-        {!popoutCondition && <Toolbar />}
-        <ErrorBoundary fallbackRender={ErrorBoundaryFallback}>
-          <SettingsModal />
-          {!popoutCondition && <Navbar className="no-drag" />}
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <AlertProvider>
-                  <Dashboard />
-                </AlertProvider>
-              }
-            />
-            <Route path="/video" element={<Video />} />
-            <Route path="/missions" element={<Missions />} />
-            <Route path="/graphs" element={<Graphs />} />
-            <Route path="/params" element={<Params />} />
-            <Route path="/config" element={<Config />} />
-            <Route path="/webcam" element={<CameraWindow />} />
-            <Route path="/rtsp" element={<RtspCanvasPage />} />
-            <Route path="/fla" element={<FLA />} />
-          </Routes>
-          {!popoutCondition && <Commands />}
-        </ErrorBoundary>
-      </SingleRunWrapper>
+        <SingleRunWrapper>
+          {!popoutCondition && <Toolbar />}
+          <ErrorBoundary fallbackRender={ErrorBoundaryFallback}>
+            <SettingsModal />
+            {!popoutCondition && <Navbar className="no-drag" />}
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <AlertProvider>
+                    <Dashboard />
+                  </AlertProvider>
+                }
+              />
+              <Route path="/video" element={<Video />} />
+              <Route path="/missions" element={<Missions />} />
+              <Route path="/graphs" element={<Graphs />} />
+              <Route path="/params" element={<Params />} />
+              <Route path="/config" element={<Config />} />
+              <Route path="/webcam" element={<CameraWindow />} />
+              <Route path="/rtsp" element={<RtspCanvasPage />} />
+              <Route path="/fla" element={<FLA />} />
+            </Routes>
+            {!popoutCondition && <Commands />}
+          </ErrorBoundary>
+        </SingleRunWrapper>
       </VideoStreamProvider>
     </SettingsProvider>
   )

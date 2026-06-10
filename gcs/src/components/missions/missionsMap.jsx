@@ -71,11 +71,11 @@ function MapSectionNonMemo({
   markerDragEndCallback,
   addNewMissionItem,
   updateMissionHomePosition,
-  clearMissionItems,
+  // clearMissionItems,
   addFencePolygon,
-  activeTab,
+  // activeTab,
   zoomTarget,
-  setZoomTarget,
+  // setZoomTarget,
 }) {
   // Redux
   const connected = useSelector(selectConnectedToDrone)
