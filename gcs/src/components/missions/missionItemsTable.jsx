@@ -2,7 +2,7 @@
   This table displays all the mission items.
 */
 
-import { Table } from "@mantine/core"
+// import { Table } from "@mantine/core"
 import React, { useEffect, useState } from "react"
 import { isGlobalFrameHomeCommand } from "../../helpers/filterMissions"
 import MissionItemsTableRow from "./missionItemsTableRow"

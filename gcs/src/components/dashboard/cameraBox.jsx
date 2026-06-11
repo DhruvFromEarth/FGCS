@@ -147,7 +147,7 @@ export default function CameraBox() {
             videoConstraints={{ deviceId }}
             className="max-w-[350px] w-[100%] @xl:max-w-[640px]"
             onUserMedia={() => console.log("Webcam stream ready")}
-            onUserMediaError={() => setInvalidStream(true)}
+            // onUserMediaError={() => setInvalidStream(true)}
           />
         )}
 

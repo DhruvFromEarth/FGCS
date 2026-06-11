@@ -8,11 +8,11 @@ import {
   Select,
   Modal,
 } from "@mantine/core"
-import { IconArrowDown, IconArrowUp, IconTrash, IconChevronDown } from "@tabler/icons-react"
-import { useEffect, useState, useRef } from "react"
+import { IconTrash, IconChevronDown } from "@tabler/icons-react"
+import { useEffect, useState } from "react"
 import {
   coordToInt,
-  getPositionFrameName,
+  // getPositionFrameName,
   intToCoord,
 } from "../../helpers/dataFormatters"
 import {
@@ -34,14 +34,14 @@ export default function MissionItemsTableRow({
   missionItem,
   updateMissionItem,
   deleteMissionItem,
-  updateMissionItemOrder,
+  // updateMissionItemOrder,
   openItemId,
   handleItemClick,
 }) {
   const aircraftType = useSelector(selectAircraftType);
 
   const [missionItemData, setMissionItemData] = useState(missionItem);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  // const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   // Update parent when internal state changes
   useEffect(() => {
@@ -212,172 +212,172 @@ export default function MissionItemsTableRow({
     );
   }
 
-  function SettingsHamberger() {
-    return (
-      <>
-        <div className="ml-auto cursor-pointer" onClick={() => setIsSettingsModalOpen(true)}>
-          ☰
-        </div>
+  // function SettingsHamberger() {
+  //   return (
+  //     <>
+  //       <div className="ml-auto cursor-pointer" onClick={() => setIsSettingsModalOpen(true)}>
+  //         ☰
+  //       </div>
 
-        <Modal
-          opened={isSettingsModalOpen}
-          onClose={() => setIsSettingsModalOpen(false)}
-          title="Settings"
-          centered
-          overlayProps={{
-            background: 'transparent',
-            opacity: 0.4,
-            blur: 0,
-          }}
-        >
-          <div className="flex flex-col gap-2">
-            {/* <div className="flex gap-2">
-              <ActionIcon
-                onClick={() => updateMissionItemOrder(missionItemData.id, -1)}
-              >
-                <IconArrowUp size={20} />
-              </ActionIcon>
-              <ActionIcon
-                onClick={() => updateMissionItemOrder(missionItemData.id, 1)}
-              >
-                <IconArrowDown size={20} />
-              </ActionIcon>
-            </div> */}
+  //       <Modal
+  //         opened={isSettingsModalOpen}
+  //         onClose={() => setIsSettingsModalOpen(false)}
+  //         title="Settings"
+  //         centered
+  //         overlayProps={{
+  //           background: 'transparent',
+  //           opacity: 0.4,
+  //           blur: 0,
+  //         }}
+  //       >
+  //         <div className="flex flex-col gap-2">
+  //           {/* <div className="flex gap-2">
+  //             <ActionIcon
+  //               onClick={() => updateMissionItemOrder(missionItemData.id, -1)}
+  //             >
+  //               <IconArrowUp size={20} />
+  //             </ActionIcon>
+  //             <ActionIcon
+  //               onClick={() => updateMissionItemOrder(missionItemData.id, 1)}
+  //             >
+  //               <IconArrowDown size={20} />
+  //             </ActionIcon>
+  //           </div> */}
 
-            <div className="flex justify-between items-center">
-              <span>Param 1:</span>
-              <NumberInput
-                value={missionItemData.param1}
-                onChange={(val) => updateMissionItemData("param1", val)}
-                hideControls
-                className="w-[150px]"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.target.blur(); // triggers onBlur and closes editing
-                  }
-                }}
-              />
-            </div>
+  //           <div className="flex justify-between items-center">
+  //             <span>Param 1:</span>
+  //             <NumberInput
+  //               value={missionItemData.param1}
+  //               onChange={(val) => updateMissionItemData("param1", val)}
+  //               hideControls
+  //               className="w-[150px]"
+  //               onKeyDown={(e) => {
+  //                 if (e.key === "Enter") {
+  //                   e.target.blur(); // triggers onBlur and closes editing
+  //                 }
+  //               }}
+  //             />
+  //           </div>
 
-            <div className="flex justify-between items-center">
-              <span>Param 2:</span>
-              <NumberInput
-                value={missionItemData.param2}
-                onChange={(val) => updateMissionItemData("param2", val)}
-                hideControls
-                className="w-[150px]"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.target.blur(); // triggers onBlur and closes editing
-                  }
-                }}
-              />
-            </div>
+  //           <div className="flex justify-between items-center">
+  //             <span>Param 2:</span>
+  //             <NumberInput
+  //               value={missionItemData.param2}
+  //               onChange={(val) => updateMissionItemData("param2", val)}
+  //               hideControls
+  //               className="w-[150px]"
+  //               onKeyDown={(e) => {
+  //                 if (e.key === "Enter") {
+  //                   e.target.blur(); // triggers onBlur and closes editing
+  //                 }
+  //               }}
+  //             />
+  //           </div>
 
-            <div className="flex justify-between items-center">
-              <span>Param 3:</span>
-              <NumberInput
-                value={missionItemData.param3}
-                onChange={(val) => updateMissionItemData("param3", val)}
-                hideControls
-                className="w-[150px]"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.target.blur(); // triggers onBlur and closes editing
-                  }
-                }}
-              />
-            </div>
+  //           <div className="flex justify-between items-center">
+  //             <span>Param 3:</span>
+  //             <NumberInput
+  //               value={missionItemData.param3}
+  //               onChange={(val) => updateMissionItemData("param3", val)}
+  //               hideControls
+  //               className="w-[150px]"
+  //               onKeyDown={(e) => {
+  //                 if (e.key === "Enter") {
+  //                   e.target.blur(); // triggers onBlur and closes editing
+  //                 }
+  //               }}
+  //             />
+  //           </div>
 
-            <div className="flex justify-between items-center">
-              <span>Param 4:</span>
-              <NumberInput
-                value={missionItemData.param4}
-                onChange={(val) => updateMissionItemData("param4", val)}
-                hideControls
-                className="w-[150px]"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.target.blur(); // triggers onBlur and closes editing
-                  }
-                }}
-              />
-            </div>
+  //           <div className="flex justify-between items-center">
+  //             <span>Param 4:</span>
+  //             <NumberInput
+  //               value={missionItemData.param4}
+  //               onChange={(val) => updateMissionItemData("param4", val)}
+  //               hideControls
+  //               className="w-[150px]"
+  //               onKeyDown={(e) => {
+  //                 if (e.key === "Enter") {
+  //                   e.target.blur(); // triggers onBlur and closes editing
+  //                 }
+  //               }}
+  //             />
+  //           </div>
 
-            <div className="flex justify-between items-center">
-              <span>Lat:</span>
-              <NumberInput
-                value={intToCoord(missionItemData.x).toFixed(coordsFractionDigits)}
-                onChange={(val) => updateMissionItemData("x", coordToInt(val))}
-                hideControls
-                className="w-[150px]"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.target.blur(); // triggers onBlur and closes editing
-                  }
-                }}
-              />
-            </div>
+  //           <div className="flex justify-between items-center">
+  //             <span>Lat:</span>
+  //             <NumberInput
+  //               value={intToCoord(missionItemData.x).toFixed(coordsFractionDigits)}
+  //               onChange={(val) => updateMissionItemData("x", coordToInt(val))}
+  //               hideControls
+  //               className="w-[150px]"
+  //               onKeyDown={(e) => {
+  //                 if (e.key === "Enter") {
+  //                   e.target.blur(); // triggers onBlur and closes editing
+  //                 }
+  //               }}
+  //             />
+  //           </div>
 
-            <div className="flex justify-between items-center">
-              <span>Lng:</span>
-              <NumberInput
-                value={intToCoord(missionItemData.y).toFixed(coordsFractionDigits)}
-                onChange={(val) => updateMissionItemData("y", coordToInt(val))}
-                hideControls
-                className="w-[150px]"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.target.blur(); // triggers onBlur and closes editing
-                  }
-                }}
-              />
-            </div>
+  //           <div className="flex justify-between items-center">
+  //             <span>Lng:</span>
+  //             <NumberInput
+  //               value={intToCoord(missionItemData.y).toFixed(coordsFractionDigits)}
+  //               onChange={(val) => updateMissionItemData("y", coordToInt(val))}
+  //               hideControls
+  //               className="w-[150px]"
+  //               onKeyDown={(e) => {
+  //                 if (e.key === "Enter") {
+  //                   e.target.blur(); // triggers onBlur and closes editing
+  //                 }
+  //               }}
+  //             />
+  //           </div>
 
-            <div className="flex justify-between items-center">
-              <span>Alt:</span>
-              <NumberInput
-                value={missionItemData.z}
-                onChange={(val) => updateMissionItemData("z", val)}
-                hideControls
-                className="w-[150px]"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.target.blur(); // triggers onBlur and closes editing
-                  }
-                }}
-              />
-            </div>
+  //           <div className="flex justify-between items-center">
+  //             <span>Alt:</span>
+  //             <NumberInput
+  //               value={missionItemData.z}
+  //               onChange={(val) => updateMissionItemData("z", val)}
+  //               hideControls
+  //               className="w-[150px]"
+  //               onKeyDown={(e) => {
+  //                 if (e.key === "Enter") {
+  //                   e.target.blur(); // triggers onBlur and closes editing
+  //                 }
+  //               }}
+  //             />
+  //           </div>
 
-            {/* <div className="flex justify-between items-center">
-              <span>Frame:</span>
-              <Select
-                data={getAvailableCommands()}
-                value={missionItemData.command.toString()}
-                onChange={(value) =>
-                  updateMissionItemData("command", parseInt(value))
-                }
-                allowDeselect={false}
-                variant="unstyled"
-                rightSection={<IconChevronDown size={25} />}
-                size='s'
-                style={{ width: 160, marginTop: '0px' }}
-                styles={{
-                  input: {
-                    fontSize: 16,
-                  }
-                }}
-                classNames={{
-                  dropdown: 'min-w-[250px] text-xl',
-                  // item: 'ml-4 hover:bg-falconred-700',
-                }}
-              />{getPositionFrameName(missionItemData.frame)}
-            </div> */}
-          </div>
-        </Modal>
-      </>
-    );
-  }
+  //           {/* <div className="flex justify-between items-center">
+  //             <span>Frame:</span>
+  //             <Select
+  //               data={getAvailableCommands()}
+  //               value={missionItemData.command.toString()}
+  //               onChange={(value) =>
+  //                 updateMissionItemData("command", parseInt(value))
+  //               }
+  //               allowDeselect={false}
+  //               variant="unstyled"
+  //               rightSection={<IconChevronDown size={25} />}
+  //               size='s'
+  //               style={{ width: 160, marginTop: '0px' }}
+  //               styles={{
+  //                 input: {
+  //                   fontSize: 16,
+  //                 }
+  //               }}
+  //               classNames={{
+  //                 dropdown: 'min-w-[250px] text-xl',
+  //                 // item: 'ml-4 hover:bg-falconred-700',
+  //               }}
+  //             />{getPositionFrameName(missionItemData.frame)}
+  //           </div> */}
+  //         </div>
+  //       </Modal>
+  //     </>
+  //   );
+  // }
 
   return (<>
     <div
